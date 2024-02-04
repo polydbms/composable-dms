@@ -1,0 +1,6 @@
+name: composable-dms
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pandas=2.1.4
