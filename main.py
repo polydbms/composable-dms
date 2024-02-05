@@ -1,12 +1,8 @@
 import os
 import pandas as pd
 import duckdb
-
-q1 = ("select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(l_extendedprice) as sum_base_price, "
-      "sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,) sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge, "
-      "avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc, count(*) as count_order "
-      "from sf1.lineitem where l_shipdate <= date '1998-12-01' - interval '90' day (3) group by l_returnflag, l_linestatus order by l_returnflag, "
-      "l_linestatus;")
+import time
+import re
 
 def formatTables(sf):
     # Iterate tabular TPC-H Schema
@@ -43,16 +39,32 @@ def formatTables(sf):
         df.to_csv(f'/data/sf{sf}/{t.split(".")[0]}.csv', index=False)
 
 def insertDuckDB(con, sf):
-    con.execute(query=f'CREATE SCHEMA sf{sf}')
-
     for t in os.listdir(f'/data/sf{sf}'):
         if t.split(".")[1]=="csv":
-            con.sql(f'CREATE TABLE sf{sf}.{t.split(".")[0]} AS FROM read_csv("/data/sf{sf}/{t}");')
+            con.sql(f'CREATE TABLE sf{sf}{t.split(".")[0]} AS FROM read_csv("/data/sf{sf}/{t}");')
+
+def testDuckDB(sf, query):
+    stWT = time.time()
+    stCPU = time.process_time()
+    query_result = con.from_substrait(proto=query[1])
+    etCPU = time.process_time()
+    etWT = time.time()
+    print("TEST:")
+    print(query[0])
+    print(query[1])
+    resWT = (etWT - stWT) * 1000
+    resCPU = (etCPU - stCPU) * 1000
+    print(f'Query {query[0]} on {sf}:')
+    print(query_result)
+    resTuple = (sf, query[0], resWT, resCPU)
+
+    return resTuple
 
 
 if __name__ == "__main__":
     print("Hello World")
     print(os.listdir("/data"))
+    print(os.listdir("/queries"))
 
     # Connect to new DuckDB instance & load substrait extension
     con = duckdb.connect('duck.db')
@@ -64,41 +76,37 @@ if __name__ == "__main__":
         formatTables(str(f).split('f')[1])
         insertDuckDB(con, str(f).split('f')[1])
 
-    con.execute(query="CREATE TABLE crossfit (exercise TEXT, difficulty_level INT)")
-    con.execute(
-        query="INSERT INTO crossfit VALUES ('Push Ups', 3), ('Pull Ups', 5) , ('Push Jerk', 7), ('Bar Muscle Up', 10)")
-
-    proto_bytes = con.get_substrait(query="SELECT count(L_RETURNFLAG) AS items FROM sf1.lineitem").fetchone()[0]
-
-    query_result = con.from_substrait(proto=proto_bytes)
-    print(query_result)
     #DuckDB overview
-    con.sql("SELECT * FROM information_schema.schemata").show()
+    #con.sql("SELECT * FROM information_schema.schemata").show()
     con.sql("SELECT * FROM information_schema.tables").show()
-    con.sql("SELECT * FROM information_schema.columns").show(max_rows=100000, max_col_with=100000)
+    #con.sql("SELECT * FROM information_schema.columns").show(max_rows=100000, max_col_with=100000)
 
 
+    # Get Substrait queries
+    substrait_queries = []  # Tuple: (q#, [substrait_protobuf])
+    for sf in os.listdir("/data"):
+        for q in os.listdir("/queries"):
+            with open(f'/queries/{q}') as file:
+                reg = re.compile(r"\bLINEITEM.*?\b")
+                rep = sf+"lineitem"
+                subquery = re.sub(reg, rep, file.read(), 1)
+                substrait_queries.append((q.split('.')[0], con.get_substrait(query=subquery).fetchone()[0]))  # Mit sf?
+
+    print("Results Substrait queries:")
+    print(substrait_queries)
+
+    #con.sql("SELECT * FROM sf1lineitem").show()
+    #con.sql("SELECT * FROM sf0001lineitem").show()
+    #con.sql("SELECT current_setting('enable_object_cache');").show()
 
 
-    #con.sql("Select * from sf1.lineitem").show()
+    # Test DuckDB Engine with different queries & different sf.
+    resultsDuckDB = []      # Tuple: (sf#, q#, [duration_millisecondsWT], [duration_millisecondsCPU])
 
-    #proto_bytes = con.get_substrait(query="SELECT count(*) as test FROM sf1.lineitem").fetchone()[0]
-    #query_result = con.from_substrait(proto=proto_bytes)
+    for sf in os.listdir("/data"):
+        for query in substrait_queries:
+            resultsDuckDB.append(testDuckDB(sf, query))
 
-    #json = con.get_substrait_json("Select * from sf1.lineitem").fetchone()[0]
-    #print(json)
+    print("Results DuckDB:")
+    print(resultsDuckDB)
 
-
-
-    #print(q1)
-    #con.sql(str(q1)).show()
-
-
-
-
-    #proto_bytes = \
-    #    con.get_substrait(
-    #        query="SELECT count(exercise) AS exercise FROM crossfit WHERE difficulty_level <= 5").fetchone()[0]
-
-    #query_result = con.from_substrait(proto=proto_bytes)
-    #print(query_result)
