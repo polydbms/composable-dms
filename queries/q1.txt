@@ -12,7 +12,7 @@ SELECT
 FROM
     LINEITEM
 WHERE
-    L_SHIPDATE <= date '1998-09-01' - integer '90'
+    L_SHIPDATE <= date '1998-09-01'
 GROUP BY
     L_RETURNFLAG,
     L_LINESTATUS

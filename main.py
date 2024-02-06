@@ -3,6 +3,18 @@ import pandas as pd
 import duckdb
 import time
 import re
+import matplotlib.pyplot as plt
+import sys
+import shutil
+
+class SubstraitQuery:
+    def __init__(self, sf, q, proto):
+        self.sf = sf
+        self.q = q
+        self.proto = proto
+
+    def __str__(self):
+        return f"SF: {self.sf}, Q: {self.q}, PROTO: {self.proto}"
 
 def formatTables(sf):
     # Iterate tabular TPC-H Schema
@@ -43,70 +55,93 @@ def insertDuckDB(con, sf):
         if t.split(".")[1]=="csv":
             con.sql(f'CREATE TABLE sf{sf}{t.split(".")[0]} AS FROM read_csv("/data/sf{sf}/{t}");')
 
-def testDuckDB(sf, query):
+def testDuckDB(query):
     stWT = time.time()
     stCPU = time.process_time()
-    query_result = con.from_substrait(proto=query[1])
+    query_result = con.from_substrait(proto=query.proto)
     etCPU = time.process_time()
     etWT = time.time()
-    print("TEST:")
-    print(query[0])
-    print(query[1])
     resWT = (etWT - stWT) * 1000
     resCPU = (etCPU - stCPU) * 1000
-    print(f'Query {query[0]} on {sf}:')
+    print(f'\nQuery {query.q} on {query.sf}:\n')
     print(query_result)
-    resTuple = (sf, query[0], resWT, resCPU)
+    resTuple = (query.sf, query.q, resWT, resCPU)
 
     return resTuple
 
+def getSubstraitQuery(sf, q):
+    with open(f'/queries/{q}') as file:
+        match q:
+            case "q1.txt":
+                reg = re.compile(r"\bLINEITEM.*?\b")
+                rep = sf + "lineitem"
+                subquery = re.sub(reg, rep, file.read(), 1)
+    return SubstraitQuery(sf, q.split('.')[0], con.get_substrait(query=subquery).fetchone()[0])
+
+def plotResults(resultsDuckDB):
+    fig, ax = plt.subplots()
+    sfx = []
+    y = []
+    for result in resultsDuckDB:
+        sfx.append(result[0])
+        y.append(result[3])
+    ax.bar(sfx, y)
+    ax.set_ylabel('CPU runtime in ms')
+    ax.set_title('TPC-H Q1 on DuckDB')
+    plt.savefig("/data/plot.png")
 
 if __name__ == "__main__":
     print("Hello World")
     print(os.listdir("/data"))
     print(os.listdir("/queries"))
 
+    # Remove sf
+    #shutil.rmtree("/data/sf10")
+    #print(os.listdir("/data"))
+
+
     # Connect to new DuckDB instance & load substrait extension
     con = duckdb.connect('duck.db')
     con.install_extension("substrait")
     con.load_extension("substrait")
+
 
     # Create csv-Tables & ingest into DuckDB-db
     for f in os.listdir("/data"):
         formatTables(str(f).split('f')[1])
         insertDuckDB(con, str(f).split('f')[1])
 
-    #DuckDB overview
+
+    # DuckDB overview
     #con.sql("SELECT * FROM information_schema.schemata").show()
-    con.sql("SELECT * FROM information_schema.tables").show()
+    #con.sql("SELECT * FROM information_schema.tables").show()
     #con.sql("SELECT * FROM information_schema.columns").show(max_rows=100000, max_col_with=100000)
 
 
     # Get Substrait queries
-    substrait_queries = []  # Tuple: (q#, [substrait_protobuf])
+    substrait_queries = []  # list[SubstraitQuery]
+
     for sf in os.listdir("/data"):
         for q in os.listdir("/queries"):
-            with open(f'/queries/{q}') as file:
-                reg = re.compile(r"\bLINEITEM.*?\b")
-                rep = sf+"lineitem"
-                subquery = re.sub(reg, rep, file.read(), 1)
-                substrait_queries.append((q.split('.')[0], con.get_substrait(query=subquery).fetchone()[0]))  # Mit sf?
+            substrait_queries.append(getSubstraitQuery(sf, q))
 
-    print("Results Substrait queries:")
-    print(substrait_queries)
 
-    #con.sql("SELECT * FROM sf1lineitem").show()
-    #con.sql("SELECT * FROM sf0001lineitem").show()
-    #con.sql("SELECT current_setting('enable_object_cache');").show()
+    # Check SubstraitQuery Objects
+    #print("Results Substrait queries:")
+    #for s in substrait_queries:
+    #    print(s.__str__())
 
 
     # Test DuckDB Engine with different queries & different sf.
     resultsDuckDB = []      # Tuple: (sf#, q#, [duration_millisecondsWT], [duration_millisecondsCPU])
 
-    for sf in os.listdir("/data"):
-        for query in substrait_queries:
-            resultsDuckDB.append(testDuckDB(sf, query))
+    for query in substrait_queries:
+        con.sql(f"SELECT COUNT(L_RETURNFLAG) FROM {query.sf}lineitem;").show()
+        resultsDuckDB.append(testDuckDB(query))
 
     print("Results DuckDB:")
     print(resultsDuckDB)
+
+    # Plot
+    plotResults(resultsDuckDB)
 
