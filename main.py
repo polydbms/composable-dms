@@ -4,6 +4,9 @@ import duckdb
 import time
 import re
 import matplotlib.pyplot as plt
+import numpy as np
+#from datafusion import SessionContext
+#from datafusion import substrait as ss
 import sys
 import shutil
 
@@ -89,7 +92,7 @@ def testDuckDB(query):
         res_obj = TestResult('TPC-H', 'DuckDB', query.sf, query.q, query_result, times, timeAVG)
         return res_obj
     except Exception as e:
-        print(f"\nEXCEPTION: from_substrait() not working on{query.q}, {query.sf}: {repr(e)}")
+        print(f"EXCEPTION: from_substrait() not working on{query.q}, {query.sf}: {repr(e)}")
         #print(query.proto)
         return None
 
@@ -113,52 +116,57 @@ def getSubstraitQuery(sf, q):
         sq_obj = SubstraitQuery(sf, q.split('.')[0], con.get_substrait(query=subquery).fetchone()[0])
         return sq_obj
     except Exception as e:
-        print(f"\nEXCEPTION: get_substrait() not working on {q.split('.')[0]}, {sf}: {repr(e)}")
+        print(f"EXCEPTION: get_substrait() not working on {q.split('.')[0]}, {sf}: {repr(e)}")
         #print("SUBQUERY:")
         #print(subquery)
-        recon_ddb = reconnectDuckDB()
+        recon_ddb = restoreDuckDB()
         return recon_ddb
 
 
-def plotResults(results):
+def plotResults(results, sf_plot):
     queries = ()
-    sf_plot = {
-        'sf1': (),
-        'sf2': (),
-    }
     for i in range(1, 23):
-        if r.q[1:] == str(i):
-            queries += (r.q.upper())
-            sf_plot.update({'sf1':()})
-            # ToDo
+        count = True
+        for res in results:
+            if res.q[1:] == str(i):
+                if count: queries += (res.q.upper(),)
+                count = False
+                sf_plot[res.sf] += (round(res.runtime, 2),)
 
+    x = np.arange(len(queries))
+    width = 0.4
+    multiplier = 0
 
+    fig, ax = plt.subplots(figsize=(20,10))
 
-    fig, ax = plt.subplots()
-    sfx = []
-    y = []
-    for result in resultsDuckDB:
-        sfx.append(result[0])
-        y.append(result[3])
-    ax.bar(sfx, y)
+    for sf_attr, measurement in sf_plot.items():
+        offset = width * multiplier
+        rects = ax.bar(x + offset, measurement, width, label=sf_attr)
+        ax.bar_label(rects, padding=3)
+        multiplier += 1
+
     ax.set_ylabel('CPU runtime in ms')
-    ax.set_title('TPC-H Q1 on DuckDB')
-    plt.savefig("/data/results/plots/plot.png")
+    ax.set_title('TPC-H Queries on DuckDB')
+    ax.set_xticks(x+(width/2), queries)
+    ax.legend(loc='upper left', ncols=len(sf_plot))
+    ax.set_ylim(0, 22)
+
+    plt.savefig("/data/results/plots/tpch_plot.png")
 
 
 def connectDuckDB():
     print('Connecting to DuckDB..')
-    con_ddb = duckdb.connect("duck.db")
+    con_ddb = duckdb.connect("data/duck.db")
     con_ddb.install_extension("substrait")
     con_ddb.load_extension("substrait")
-    print(' done')
+    print(' done\n')
     return con_ddb
 
 
-def reconnectDuckDB():
-    print(' Reconnecting to DuckDB..\n')
+def restoreDuckDB():
+    print(' restore duckdb..')
     con.close()
-    recon = duckdb.connect("duck.db")
+    recon = duckdb.connect("data/duck.db")
     recon.install_extension("substrait")
     recon.load_extension("substrait")
     return recon
@@ -167,22 +175,33 @@ def reconnectDuckDB():
 if __name__ == "__main__":
     print("\n\tExecution Engine Benchmark Test\n")
 
+
     # Remove sf
     #shutil.rmtree("/data/sf10")
     #print(os.listdir("/data"))
 
-    # Connect to new DuckDB instance & load substrait extension
-    con = connectDuckDB()
     #con.sql("CALL duckdb_databases();").show()
+    sf_plot = {}
 
-
-    # Create csv-Tables & ingest into DuckDB-db
-    print('Creating and inserting Tables..')
+    # Create csv-Tables & ingest into DuckDB-db, if not yet there
+    print('Checking if data already exists..')
+    ddb = False
     for f in os.listdir("/data"):
-        if f.startswith("sf1") | f.startswith("sf2"):
-            formatTables(f)
-            insertDuckDB(con, f)
-    print(' done')
+        if f.startswith("sf1") | f.startswith("sf2"):                   # Temp
+            sf_plot.update({f: ()})
+        if f == 'duck.db': ddb = True
+    print(' data found --> skipping data ingestion\n')
+
+    # Connect to DuckDB instance & load substrait extension
+    con = connectDuckDB()
+
+    if not ddb:
+        print('Creating and inserting Tables..')
+        for f in os.listdir("/data"):
+            if f.startswith("sf1") | f.startswith("sf2"):               # Temp
+                formatTables(f)
+                insertDuckDB(con, f)
+        print(' done')
 
     # DuckDB overview
     #con.sql("SELECT * FROM information_schema.schemata").show()
@@ -193,7 +212,7 @@ if __name__ == "__main__":
     # Get Substrait queries
     substrait_queries = []  # list[SubstraitQuery]
 
-    print('Get Substrait Queries..')
+    print('Get Substrait Queries..\n')
     for sf in os.listdir("/data"):
         if sf.startswith("sf1") | sf.startswith("sf2"):
             for q in os.listdir("/queries"):
@@ -213,7 +232,7 @@ if __name__ == "__main__":
     # Test DuckDB Engine with different queries & different sf
     results = []    # list[TestResult]
 
-    print('\nRun query tests..')
+    print('\nRun query tests..\n')
     for query in substrait_queries:
         t_r = testDuckDB(query)
         if t_r is not None:
@@ -224,7 +243,33 @@ if __name__ == "__main__":
         print(r.__str__())
 
     # Plot
-    #plotResults(results)
+    #plotResults(results, sf_plot)
+
+    #os.system("conda deactivate")
+    #os.system("conda activate test-db")
+    #os.system("pip install datafusion")
+    #from datafusion import SessionContext
+    #from datafusion import substrait as ss
+
+
+    #ctx = SessionContext()
+    #ctx.register_csv(
+    #    "sf1lineitem", "data/sf1/lineitem.csv"
+    #)
+#
+    #for sub_q in substrait_queries:
+    #    if (sub_q.q == 'q1') & (sub_q.sf == 'sf1'):
+    #        logical_plan = ss.substrait.consumer.from_substrait_plan(ctx, sub_q.proto)
+#
+    #res = ctx.create_dataframe_from_logical_plan(logical_plan)
+#
+    #print("DATAFUSION!:")
+    #print(res)
+
+
 
 # graphviz
 # grafisch
+
+# sudo make build
+# sudo docker run -it --rm --name=test10 --mount source=test-data,destination=/data benchmark_test

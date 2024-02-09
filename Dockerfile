@@ -1,8 +1,10 @@
 FROM continuumio/miniconda3
 
 COPY environment.yml .
+COPY testdb.yml .
 
 RUN conda env create -f environment.yml
+RUN conda env create -f testdb.yml
 
 SHELL ["conda", "run", "-n", "composable-dms", "/bin/bash", "-c"]
 
