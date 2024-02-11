@@ -5,6 +5,7 @@ import time
 import re
 import matplotlib.pyplot as plt
 import numpy as np
+import json
 #from datafusion import SessionContext
 #from datafusion import substrait as ss
 import sys
@@ -19,6 +20,10 @@ class SubstraitQuery:
 
     def __str__(self):
         return f"SF: {self.sf}, Q: {self.q}, PROTO: {self.proto}"
+
+    def __dict__(self):
+        return f"{{'sf':'{self.sf}', 'q':'{self.q}', 'proto':'{self.proto}'}}"
+    
 
 class TestResult:
     def __init__(self, benchmark, engine, sf, q, query_result, measurements, runtime):
@@ -114,6 +119,9 @@ def getSubstraitQuery(sf, q):
     # Get the Substrait protobuf-Query, else restart duckdb and continue
     try:
         sq_obj = SubstraitQuery(sf, q.split('.')[0], con.get_substrait(query=subquery).fetchone()[0])
+        if (sq_obj.sf == 'sf1') & (sq_obj.q == 'q1'):
+            with open("/data/temp/sf1q1.proto", "wb") as f:
+                f.write(sq_obj.proto)
         return sq_obj
     except Exception as e:
         print(f"EXCEPTION: get_substrait() not working on {q.split('.')[0]}, {sf}: {repr(e)}")
@@ -171,37 +179,44 @@ def restoreDuckDB():
     recon.load_extension("substrait")
     return recon
 
+def addToData(con, sf):
+    print(f'Creating and inserting {sf}-tables..')
+    formatTables(sf)
+    insertDuckDB(con, sf)
+    print(' --> done')
+
 
 if __name__ == "__main__":
     print("\n\tExecution Engine Benchmark Test\n")
 
 
-    # Remove sf
-    #shutil.rmtree("/data/sf10")
-    #print(os.listdir("/data"))
-
-    #con.sql("CALL duckdb_databases();").show()
-    sf_plot = {}
 
     # Create csv-Tables & ingest into DuckDB-db, if not yet there
-    print('Checking if data already exists..')
-    ddb = False
-    for f in os.listdir("/data"):
-        if f.startswith("sf1") | f.startswith("sf2"):                   # Temp
-            sf_plot.update({f: ()})
-        if f == 'duck.db': ddb = True
-    print(' data found --> skipping data ingestion\n')
+
 
     # Connect to DuckDB instance & load substrait extension
     con = connectDuckDB()
 
-    if not ddb:
-        print('Creating and inserting Tables..')
-        for f in os.listdir("/data"):
-            if f.startswith("sf1") | f.startswith("sf2"):               # Temp
-                formatTables(f)
-                insertDuckDB(con, f)
-        print(' done')
+    sf_plot = {}
+    print('Checking if data already exists..')
+    data_added = False
+    tab_rel = con.sql("SELECT table_name FROM duckdb_tables();").df()
+    print(tab_rel)
+    for f in os.listdir("/data"):
+        if f.startswith("sf"):                   # Temp
+            sf_plot.update({f: ()})
+            sfbool = False
+            for t in tab_rel['table_name']:
+                print(t)
+                if t.startswith(f):
+                    sfbool = True
+            if not sfbool:
+                print(f" --> {f} data missing\n")
+                data_added = True
+                addToData(con, f)
+    if not data_added:
+        print(' --> data found, skipping data ingestion\n')
+
 
     # DuckDB overview
     #con.sql("SELECT * FROM information_schema.schemata").show()
@@ -228,6 +243,13 @@ if __name__ == "__main__":
     #for s in substrait_queries:
     #    print(s.__str__())
 
+    # Save Substrait Queries as json
+    for it in substrait_queries:
+        print(it.__dict__())
+        with open('/data/temp/substrait_queries.json', 'a+') as f:
+            json.dump(it.__dict__(), f)
+
+
 
     # Test DuckDB Engine with different queries & different sf
     results = []    # list[TestResult]
@@ -243,33 +265,27 @@ if __name__ == "__main__":
         print(r.__str__())
 
     # Plot
-    #plotResults(results, sf_plot)
+    plotResults(results, sf_plot)
 
     #os.system("conda deactivate")
-    #os.system("conda activate test-db")
-    #os.system("pip install datafusion")
-    #from datafusion import SessionContext
-    #from datafusion import substrait as ss
+    os.system("conda env list")
+    os.system("conda run -n test-db python tests.py")
+    os.system("conda env list")
 
 
-    #ctx = SessionContext()
-    #ctx.register_csv(
-    #    "sf1lineitem", "data/sf1/lineitem.csv"
-    #)
-#
-    #for sub_q in substrait_queries:
-    #    if (sub_q.q == 'q1') & (sub_q.sf == 'sf1'):
-    #        logical_plan = ss.substrait.consumer.from_substrait_plan(ctx, sub_q.proto)
-#
-    #res = ctx.create_dataframe_from_logical_plan(logical_plan)
-#
-    #print("DATAFUSION!:")
-    #print(res)
+
 
 
 
 # graphviz
 # grafisch
 
+
+# tpch_generator
 # sudo make build
-# sudo docker run -it --rm --name=test10 --mount source=test-data,destination=/data benchmark_test
+# docker volume create test-data
+# docker run -it --rm -v test-data:/data --name tpch-generator tpch-generator
+
+# run tests
+# sudo make build
+# sudo docker run -it --rm --name=test --mount source=test-data,destination=/data benchmark_test

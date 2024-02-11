@@ -17,4 +17,5 @@ RUN echo "Run Test Docker"
 COPY queries/ /queries/
 
 COPY main.py .
+COPY tests.py .
 ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "composable-dms", "python", "main.py"]
