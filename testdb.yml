@@ -3,5 +3,6 @@ channels:
   - conda-forge
 dependencies:
   - python=3.11
-  - pyarrow=12.0.0
-  - datafusion=33.0.0
+  - pyarrow=15.0.0
+  - datafusion=34.0.0
+  - pandas=2.1.4

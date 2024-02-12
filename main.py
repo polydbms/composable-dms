@@ -81,7 +81,7 @@ def insertDuckDB(con, sf):
 
 
 def testDuckDB(query):
-    global query_result
+    #global query_result
     #print(f'\nQuery {query.q} on {query.sf}:\n')
     times = []
     try:
@@ -116,17 +116,21 @@ def getSubstraitQuery(sf, q):
     #con.sql("PRAGMA disable_optimizer;")
     #con.sql(subquery).show()
 
+    # Test
+    sql_t = con.get_substrait(query="SELECT * FROM lineitem").fetchone()[0]
+    with open(f"/data/substrait/proto/test_q.proto", "wb") as f:
+        f.write(sql_t)
+
+
     # Get the Substrait protobuf-Query, else restart duckdb and continue
     try:
         sq_obj = SubstraitQuery(sf, q.split('.')[0], con.get_substrait(query=subquery).fetchone()[0])
-        if (sq_obj.sf == 'sf1') & (sq_obj.q == 'q1'):
-            with open("/data/temp/sf1q1.proto", "wb") as f:
-                f.write(sq_obj.proto)
+        with open(f"/data/substrait/proto/{sf}_{q.split('.')[0]}_substrait.proto", "wb") as f:
+            f.write(sq_obj.proto)
         return sq_obj
     except Exception as e:
         print(f"EXCEPTION: get_substrait() not working on {q.split('.')[0]}, {sf}: {repr(e)}")
-        #print("SUBQUERY:")
-        #print(subquery)
+        #print(f"SUBQUERY: {subquery}")
         recon_ddb = restoreDuckDB()
         return recon_ddb
 
@@ -201,13 +205,11 @@ if __name__ == "__main__":
     print('Checking if data already exists..')
     data_added = False
     tab_rel = con.sql("SELECT table_name FROM duckdb_tables();").df()
-    print(tab_rel)
     for f in os.listdir("/data"):
         if f.startswith("sf"):                   # Temp
             sf_plot.update({f: ()})
             sfbool = False
             for t in tab_rel['table_name']:
-                print(t)
                 if t.startswith(f):
                     sfbool = True
             if not sfbool:
@@ -217,6 +219,7 @@ if __name__ == "__main__":
     if not data_added:
         print(' --> data found, skipping data ingestion\n')
 
+    con.sql(f'CREATE TABLE lineitem AS FROM read_csv("/data/sf1/lineitem.csv");')
 
     # DuckDB overview
     #con.sql("SELECT * FROM information_schema.schemata").show()
@@ -227,9 +230,9 @@ if __name__ == "__main__":
     # Get Substrait queries
     substrait_queries = []  # list[SubstraitQuery]
 
-    print('Get Substrait Queries..\n')
+    print('\n\tProduce Substrait Queries..\n\n')
     for sf in os.listdir("/data"):
-        if sf.startswith("sf1") | sf.startswith("sf2"):
+        if sf.startswith("sf"):
             for q in os.listdir("/queries"):
                 s_q = getSubstraitQuery(sf, q)
                 if isinstance(s_q, SubstraitQuery):
@@ -244,17 +247,16 @@ if __name__ == "__main__":
     #    print(s.__str__())
 
     # Save Substrait Queries as json
-    for it in substrait_queries:
-        print(it.__dict__())
-        with open('/data/temp/substrait_queries.json', 'a+') as f:
-            json.dump(it.__dict__(), f)
+    #for it in substrait_queries:
+    #    with open('/data/substrait/json/substrait_queries.json', 'a+') as f:
+    #        json.dump(it.__dict__(), f)
 
-
+    print("\n\n\tConsuming with DuckDB:\n\n")
 
     # Test DuckDB Engine with different queries & different sf
     results = []    # list[TestResult]
 
-    print('\nRun query tests..\n')
+    print('Run query tests..\n')
     for query in substrait_queries:
         t_r = testDuckDB(query)
         if t_r is not None:
@@ -267,10 +269,7 @@ if __name__ == "__main__":
     # Plot
     plotResults(results, sf_plot)
 
-    #os.system("conda deactivate")
-    os.system("conda env list")
     os.system("conda run -n test-db python tests.py")
-    os.system("conda env list")
 
 
 
