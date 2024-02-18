@@ -45,7 +45,7 @@ def runAceroTest(query):
     def table_provider(names, schema):
         if not names:
             raise Exception("No names provided")
-        elif names[0] == "lineitem":
+        elif names[0] == "sf1lineitem":
             return lineitem
         else:
             raise Exception("Unrecognized table name")
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     # | Acero |
     # |-------|
 
-    print("\n\n\tConsuming with Acero:\n")
+    print("\n\tConsuming with Acero:\n\n")
 
     for sf in os.listdir("/data"):
         if sf.startswith("sf"):
@@ -119,8 +119,8 @@ if __name__ == "__main__":
                         print(f"Acero result on {p_sf.split('_')[1].upper()}:")
                         print(result)
                     except Exception as e:
-                        print(f"EXCEPTION with {p_sf.split('_')[1].upper()} on {p_sf.split('_')[0]}:")
-                        print(f" Acero Error: {repr(e)}\n")
+                        print(f"ACERO Exception with {p_sf.split('_')[1].upper()} on {p_sf.split('_')[0]}:")
+                        print(f" Error: {repr(e)}\n")
 
 
     #with open('data/temp/substrait_queries.json', 'r') as f:
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     # | Datafusion |
     # |------------|
 
-    print("\n\n\tConsuming with Datafusion:\n")
+    print("\n\tConsuming with Datafusion:\n\n")
 
     # Get datafusion context obj
     ctx = getSessionContextDF()
@@ -152,22 +152,27 @@ if __name__ == "__main__":
                 print(f"Datafusion: {pf.split('_')[1].upper()} on {pf.split('_')[0]}:")
                 print(results)
             except Exception as e:
-                print(f"EXCEPTION with {pf.split('_')[1].upper()} on {pf.split('_')[0]}:")
-                print(f" Datafusion Error: {repr(e)}\n")
+                print(f"DATAFUSION Exception with {pf.split('_')[1].upper()} on {pf.split('_')[0]}:")
+                print(f" Error: {repr(e)}\n")
 
+    try:
+        # Test plain sql query on Acero
+        print("\nSQL test Acero:\n\n")
+        query = getQuery('sf1', 'q1.sql')
+        print(query)
+        runAceroTest(query)
+    except Exception as e:
+        print(f"\nAcero test failed: {repr(e)}")
 
-    # Test plain sql query on Acero
-    print("SQL test Acero:")
-    query = getQuery('sf1', 'q1.sql')
-    print(query)
-    runAceroTest(query)
-
-    # Test plain sql query on datafusion
-    #print("SQL test Datafusion:")
-    #query = getQuery('sf1', 'q1.sql')
-    #print(query)
-    #df = ctx.sql(query)
-    #df.to_pandas()
+    try:
+        # Test plain sql query on datafusion
+        print("\n\nSQL test Datafusion:\n\n")
+        query = getQuery('sf1', 'q1.sql')
+        print(query)
+        df = ctx.sql(query)
+        df.to_pandas()
+    except Exception as e:
+        print(f"\nDatafusion test failed: {repr(e)}")
 
     print("\n\tbenchmark_test completed")
 

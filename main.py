@@ -97,7 +97,7 @@ def testDuckDB(query):
         res_obj = TestResult('TPC-H', 'DuckDB', query.sf, query.q, query_result, times, timeAVG)
         return res_obj
     except Exception as e:
-        print(f"EXCEPTION: from_substrait() not working on{query.q}, {query.sf}: {repr(e)}")
+        print(f"EXCEPTION: from_substrait() not working on {query.q.upper()}, {query.sf}: {repr(e)}")
         #print(query.proto)
         return None
 
@@ -117,7 +117,7 @@ def getSubstraitQuery(sf, q):
     #con.sql(subquery).show()
 
     # Test
-    sql_t = con.get_substrait(query="SELECT * FROM lineitem").fetchone()[0]
+    sql_t = con.get_substrait(query="SELECT * FROM sf1lineitem;").fetchone()[0]
     with open(f"/data/substrait/proto/test_q.proto", "wb") as f:
         f.write(sql_t)
 
@@ -171,12 +171,12 @@ def connectDuckDB():
     con_ddb = duckdb.connect("data/duck.db")
     con_ddb.install_extension("substrait")
     con_ddb.load_extension("substrait")
-    print(' done\n')
+    print(' --> done\n')
     return con_ddb
 
 
 def restoreDuckDB():
-    print(' restore duckdb..')
+    print(' --> restore duckdb..')
     con.close()
     recon = duckdb.connect("data/duck.db")
     recon.install_extension("substrait")
@@ -219,8 +219,6 @@ if __name__ == "__main__":
     if not data_added:
         print(' --> data found, skipping data ingestion\n')
 
-    con.sql(f'CREATE TABLE lineitem AS FROM read_csv("/data/sf1/lineitem.csv");')
-
     # DuckDB overview
     #con.sql("SELECT * FROM information_schema.schemata").show()
     #con.sql("SELECT * FROM information_schema.tables").show()
@@ -230,7 +228,7 @@ if __name__ == "__main__":
     # Get Substrait queries
     substrait_queries = []  # list[SubstraitQuery]
 
-    print('\n\tProduce Substrait Queries..\n\n')
+    print('\n\tProducing Substrait Queries:\n\n')
     for sf in os.listdir("/data"):
         if sf.startswith("sf"):
             for q in os.listdir("/queries"):
