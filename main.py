@@ -39,7 +39,8 @@ class TestResult:
         return (f"Test Result of {self.benchmark} query {self.q} on {self.engine} with {self.sf}:\n"
                 f" Measurements:\t{self.measurements}\n Runtime: \t{self.runtime} ms\n")
 
-def formatTables(sf):
+def createCSV(sf):
+    print(f"Create CSV data for {sf}..")
     # Iterate tabular TPC-H Schema
     for t in os.listdir(f'/data/{sf}'):
         # Add column names
@@ -72,12 +73,41 @@ def formatTables(sf):
                 continue
         # Safe as csv-File
         df.to_csv(f'/data/{sf}/{t.split(".")[0]}.csv', index=False)
+    print(" --> done")
 
+
+def createDDBView(con, sf):
+    print(f"Create DuckDB Views for {sf}..")
+    for t in os.listdir(f'/data/{sf}'):
+        if t.split(".")[1]=="csv":
+        # Add column names
+            match t:
+                case "orders.csv":
+                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
+                case "nation.csv":
+                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
+                case "lineitem.csv":
+                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
+                case "region.csv":
+                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
+                case "supplier.csv":
+                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
+                case "partsupp.csv":
+                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
+                case "part.csv":
+                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
+                case "customer.csv":
+                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
+                case _:
+                    continue
+    print(" --> done")
 
 def insertDuckDB(con, sf):
     for t in os.listdir(f'/data/{sf}'):
         if t.split(".")[1]=="csv":
             con.sql(f'CREATE TABLE {sf}{t.split(".")[0]} AS FROM read_csv("/data/{sf}/{t}");')
+        if t == 'lineitem.csv':
+            con.sql(f'CREATE TABLE {t.split(".")[0]} AS FROM read_csv("/data/{sf}/{t}");')
 
 
 def testDuckDB(query):
@@ -102,12 +132,12 @@ def testDuckDB(query):
         return None
 
 
-def getSubstraitQuery(sf, q):
+def prodSubstraitQuery(sf, q):
     # Define sf substitution param
     reg = re.compile(r"\$")
 
     # Substitute table names with corresponding sf-table names
-    with open(f'/queries/{q}') as file:
+    with open(f'/queries/tpch/{q}') as file:
         subquery = re.sub(reg, sf, re.sub(reg, sf, re.sub(reg, sf, re.sub(reg, sf, re.sub(reg, sf, re.sub(reg,
                     sf, re.sub(reg, sf, re.sub(reg, sf, file.read()))))))))
 
@@ -117,13 +147,35 @@ def getSubstraitQuery(sf, q):
     #con.sql(subquery).show()
 
     # Test
-    sql_t = con.get_substrait(query="SELECT * FROM sf1lineitem;").fetchone()[0]
-    with open(f"/data/substrait/proto/test_q.proto", "wb") as f:
-        f.write(sql_t)
+    sql_t = con.get_substrait_json(query="SELECT * FROM sf1lineitem;")
+    test_proto = sql_t.fetchone()[0]
+    python_json = json.loads(test_proto)
+    dump = json.dumps(python_json, indent=2)
+    #print("Type:")
+    #print(type(dump))
+    #print(dump)
+
+
+    with open(f"/data/substrait/proto/test_q.txt", "w") as f:
+        f.write(test_proto)
+
+
+    res = con.from_substrait_json(test_proto)
+
+    print("RES:")
+    print(type(res))
+    print(res)
 
 
     # Get the Substrait protobuf-Query, else restart duckdb and continue
     try:
+        sub_json = con.get_substrait_json(subquery)
+        json_proto = sub_json.fetchone()[0]
+        python_json = json.loads(json_proto)
+        dump = json.dumps(python_json, indent=2)
+        with open(f"/data/substrait/json/{sf}_{q.split('.')[0]}_substrait.txt", 'w') as file:
+            file.write(dump)
+
         sq_obj = SubstraitQuery(sf, q.split('.')[0], con.get_substrait(query=subquery).fetchone()[0])
         with open(f"/data/substrait/proto/{sf}_{q.split('.')[0]}_substrait.proto", "wb") as f:
             f.write(sq_obj.proto)
@@ -185,7 +237,7 @@ def restoreDuckDB():
 
 def addToData(con, sf):
     print(f'Creating and inserting {sf}-tables..')
-    formatTables(sf)
+    createCSV(sf)
     insertDuckDB(con, sf)
     print(' --> done')
 
@@ -193,6 +245,22 @@ def addToData(con, sf):
 if __name__ == "__main__":
     print("\n\tExecution Engine Benchmark Test\n")
 
+    employees_data = {
+        'Name': ['John', 'Alice', 'Bob', 'Emily',
+                 'Michael', 'Sarah', 'Daniel', 'Emma'],
+        'Age': [25, 30, 35, 28, 32, 27, 31, 29],
+        'City': ['New York', 'Los Angeles', 'Chicago', 'New York',
+                 'New York', 'Miami', 'Chicago', 'Los Angeles']
+    }
+    salaries_data = {
+        'Name': ['John', 'Alice', 'Bob', 'Emily',
+                 'Michael', 'Sarah', 'Daniel', 'Emma'],
+        'Salary': [5000, 6000, 7000, 8000, 5500, 6500, 7500, 8500],
+        'Department': ['HR', 'IT', 'Finance', 'R&D',
+                       'IT', 'Finance', 'HR', 'R&D']
+    }
+    df_employees = pd.DataFrame(employees_data).to_csv("/data/test/employees.csv", index=False)
+    df_salaries = pd.DataFrame(salaries_data).to_csv("/data/test/salaries.csv", index=False)
 
 
     # Create csv-Tables & ingest into DuckDB-db, if not yet there
@@ -202,26 +270,38 @@ if __name__ == "__main__":
     con = connectDuckDB()
 
     sf_plot = {}
-    print('Checking if data already exists..')
-    data_added = False
     tab_rel = con.sql("SELECT table_name FROM duckdb_tables();").df()
-    for f in os.listdir("/data"):
-        if f.startswith("sf"):                   # Temp
-            sf_plot.update({f: ()})
-            sfbool = False
+    print('Checking if data already exists..')
+    # Create csv - Views
+    for sf in os.listdir("/data"):
+        if sf.startswith("sf"):                   # Temp
+            sf_plot.update({sf: ()})
+            csv = False
+            tables = False
+            for f in os.listdir(f"/data/{sf}"):
+                if f == "customer.csv":
+                    csv = True
+                    print(f" --> csv data found for {sf}")
             for t in tab_rel['table_name']:
-                if t.startswith(f):
-                    sfbool = True
-            if not sfbool:
-                print(f" --> {f} data missing\n")
-                data_added = True
-                addToData(con, f)
-    if not data_added:
-        print(' --> data found, skipping data ingestion\n')
+                if t.startswith(sf):
+                    tables = True
+            if not csv:
+                createCSV(sf)
+                #createPARQUET()
+            if not tables:
+                insertDuckDB(con, sf)
+                #createDDBView(con, sf)
+
+    #print("DuckDB Views:")
+    #print(con.sql("SELECT view_name FROM duckdb_views();").df().to_string())
+
+
+    #Parquet test
+    con.sql("COPY sf1lineitem TO '/data/test/sf1lineitem.parquet' (FORMAT PARQUET);")
 
     # DuckDB overview
     #con.sql("SELECT * FROM information_schema.schemata").show()
-    #con.sql("SELECT * FROM information_schema.tables").show()
+    con.sql("SELECT * FROM information_schema.tables").show()
     #con.sql("SELECT * FROM information_schema.columns").show(max_rows=100000, max_col_with=100000)
 
 
@@ -231,8 +311,8 @@ if __name__ == "__main__":
     print('\n\tProducing Substrait Queries:\n\n')
     for sf in os.listdir("/data"):
         if sf.startswith("sf"):
-            for q in os.listdir("/queries"):
-                s_q = getSubstraitQuery(sf, q)
+            for q in os.listdir("/queries/tpch"):
+                s_q = prodSubstraitQuery(sf, q)
                 if isinstance(s_q, SubstraitQuery):
                     substrait_queries.append(s_q)
                 else:

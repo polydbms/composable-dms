@@ -4,10 +4,12 @@ import pyarrow as pa
 from pyarrow.lib import tobytes
 import pyarrow.substrait as substrait
 from pyarrow import csv
+import pyarrow.parquet as pq
 import re
 from datafusion import SessionContext
 from datafusion import substrait as ss
 import pandas as pd
+import numpy as np
 
 
 # Get datafusion SessionContext obj
@@ -39,20 +41,68 @@ def getQuery(sf, q):
                     sf, re.sub(reg, sf, re.sub(reg, sf, file.read()))))))))
     return subquery
 
-def runAceroTest(query):
-    lineitem = pa.csv.read_csv(f"/data/sf1/lineitem.csv")
+def runAceroTest():
 
-    def table_provider(names, schema):
-        if not names:
-            raise Exception("No names provided")
-        elif names[0] == "sf1lineitem":
-            return lineitem
-        else:
-            raise Exception("Unrecognized table name")
+    tables = {}
+    table_provider = lambda names, schema: tables[names[0].lower()]
+
+    tables["employees"] = pa.csv.read_csv("/data/test/employees.csv")
+    tables["salaries"] = pa.csv.read_csv("/data/test/salaries.csv")
+    tables["sf1lineitem"] = pq.read_table(f"/data/test/sf1lineitem.parquet")
+
+
+    print("PARQUET:")
+    print(tables['sf1lineitem'])
+
+    #def table_provider(names, schema):
+    #    print(1111)
+    #    if not names:
+    #        raise Exception("No names provided")
+    #    elif names[0] == "employees":
+    #        return employees
+    #    elif names[0] == "salaries":
+    #        return salaries
+    #    elif names[0].lower() == "sf1lineitem":
+    #        print(22222222)
+    #        return sf1lineitem
+    #    else:
+    #        raise Exception("Unrecognized table name")
+
+
+    #with open(f"/data/substrait/json/sf1_q1_substrait.txt", "r") as file:
+    #    sub_json = file.read()
+#
+    #print("JSON:")
+    #print(sub_json)
 
     substrait_bytes = None
-    with open(f"/data/substrait/proto/test_q.proto", "rb") as f:
+    sub_test_bytes = None
+    with open(f"/queries/test/query.proto", "rb") as f:
+        print(1)
         substrait_bytes = f.read()
+    print(substrait_bytes)
+
+    #with open(f"/data/substrait/proto/test_q.proto", "rb") as f:
+    #    print(2)
+    #    sub_test_bytes = f.read()
+    #print(sub_test_bytes)
+
+
+    with open(f"/data/substrait/proto/test_q.txt", "r") as f:
+        print(2)
+        sub_test_bytes = f.read()
+    print(sub_test_bytes)
+
+
+    #print(substrait_bytes)
+
+    #file = open('/queries/query_1_plan.json')
+    #data = json.load(file)
+    #s_bytes = data.fetchone()[0]
+    print(222)
+    sub_test_bytes = pa._substrait._parse_json_plan(sub_test_bytes.encode())
+    #print(s_query)
+    print(333)
 
     reader = pa.substrait.run_query(
         substrait_bytes, table_provider=table_provider
@@ -61,7 +111,14 @@ def runAceroTest(query):
     print("Acero test result:")
     print(result)
 
+    print("--------------------------")
 
+    reader = substrait.run_query(
+        sub_test_bytes, table_provider=table_provider
+    )
+    result = reader.read_all().to_pandas()
+    print("Acero test result:")
+    print(result)
 
 
 if __name__ == "__main__":
@@ -112,7 +169,7 @@ if __name__ == "__main__":
                         with open(f"/data/substrait/proto/{p_sf}", "rb") as f:
                             substrait_bytes = f.read()
 
-                        reader = pa.substrait.run_query(
+                        reader = substrait.run_query(
                             substrait_bytes, table_provider=table_provider
                         )
                         result = reader.read_all().to_pandas()
@@ -123,11 +180,10 @@ if __name__ == "__main__":
                         print(f" Error: {repr(e)}\n")
 
 
-    #with open('data/temp/substrait_queries.json', 'r') as f:
-    #    sq_data = json.load(f)
-
-    #print("SQ Data")
-    #print(sq_data)
+    with open('data/temp/substrait_queries.json', 'r') as f:
+        sq_data = json.load(f)
+    print("SQ Data")
+    print(sq_data)
 
     # |------------|
     # | Datafusion |
@@ -138,7 +194,7 @@ if __name__ == "__main__":
     # Get datafusion context obj
     ctx = getSessionContextDF()
 
-    # Get query-protobuf and execute
+   #  Get query-protobuf and execute
     for pf in os.listdir("/data/substrait/proto"):
         if not (pf.split('_')[1] == 'q18'):
             with open(f"data/substrait/proto/{pf}", 'rb') as f:
@@ -158,9 +214,9 @@ if __name__ == "__main__":
     try:
         # Test plain sql query on Acero
         print("\nSQL test Acero:\n\n")
-        query = getQuery('sf1', 'q1.sql')
-        print(query)
-        runAceroTest(query)
+        #query = getQuery('sf1', 'q1.sql')
+        #print(query)
+        runAceroTest()
     except Exception as e:
         print(f"\nAcero test failed: {repr(e)}")
 
