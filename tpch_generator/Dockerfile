@@ -16,7 +16,7 @@ RUN apt-get update \
 RUN git clone https://github.com/eyalroz/tpch-dbgen.git
 
 RUN set -x \
-    && cd tpch-dbgen \
+    && cd tpch_sql-dbgen \
     && cmake -D CSV_OUTPUT_FORMAT:BOOL=OFF -D EOL_HANDLING:BOOL=ON . \
     && make
 

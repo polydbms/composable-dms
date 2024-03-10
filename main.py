@@ -1,191 +1,31 @@
 import os
-import pandas as pd
+#import pandas as pd
 import duckdb
-import time
-import re
+#import time
+#import re
 import matplotlib.pyplot as plt
 import numpy as np
-import json
-#from datafusion import SessionContext
-#from datafusion import substrait as ss
-import sys
-import shutil
+#import json
+
+import pyarrow as pa
+from pyarrow.lib import tobytes
+import pyarrow.substrait as substrait
+from pyarrow import csv
+import pyarrow.parquet as pq
+from datafusion import SessionContext
+from datafusion import substrait as ss
+from pathlib import Path
+from filelock import FileLock
+from test_result import TestResult
+
+from substrait_producer import duckdb_producer, ibis_producer, isthmus_producer
+from substrait_consumer import duckdb_parquet_tester, datafusion_parquet_tester, acero_parquet_tester
 
 
-class SubstraitQuery:
-    def __init__(self, sf, q, proto):
-        self.sf = sf
-        self.q = q
-        self.proto = proto
-
-    def __str__(self):
-        return f"SF: {self.sf}, Q: {self.q}, PROTO: {self.proto}"
-
-    def __dict__(self):
-        return f"{{'sf':'{self.sf}', 'q':'{self.q}', 'proto':'{self.proto}'}}"
-    
-
-class TestResult:
-    def __init__(self, benchmark, engine, sf, q, query_result, measurements, runtime):
-        self.benchmark = benchmark
-        self.engine = engine
-        self.sf = sf
-        self.q = q
-        self.query_result = query_result
-        self.measurements = measurements
-        self.runtime = runtime
-
-    def __str__(self):
-        return (f"Test Result of {self.benchmark} query {self.q} on {self.engine} with {self.sf}:\n"
-                f" Measurements:\t{self.measurements}\n Runtime: \t{self.runtime} ms\n")
-
-def createCSV(sf):
-    print(f"Create CSV data for {sf}..")
-    # Iterate tabular TPC-H Schema
-    for t in os.listdir(f'/data/{sf}'):
-        # Add column names
-        match t:
-            case "orders.tbl":
-                df = pd.read_table(f'/data/{sf}/{t}', delimiter='|', names=['O_ORDERKEY', 'O_CUSTKEY',
-                        'O_ORDERSTATUS', 'O_TOTALPRICE', 'O_ORDERDATE', 'O_ORDERPRIORITY', 'O_CLERK','O_SHIPPRIORITY', 'O_COMMENT'])
-            case "nation.tbl":
-                df = pd.read_table(f'/data/{sf}/{t}', delimiter='|', names=['N_NATIONKEY', 'N_NAME',
-                        'N_REGIONKEY', 'N_COMMENT'])
-            case "lineitem.tbl":
-                df = pd.read_table(f'/data/{sf}/{t}', delimiter='|', names=['L_ORDERKEY', 'L_PARTKEY',
-                        'L_SUPPKEY', 'L_LINENUMBER', 'L_QUANTITY', 'L_EXTENDEDPRICE', 'L_DISCOUNT', 'L_TAX', 'L_RETURNFLAG',
-                        'L_LINESTATUS', 'L_SHIPDATE', 'L_COMMITDATE', 'L_RECEIPTDATE', 'L_SHIPINSTRUCT', 'L_SHIPMODE', 'L_COMMENT'])
-            case "region.tbl":
-                df = pd.read_table(f'/data/{sf}/{t}', delimiter='|', names=['R_REGIONKEY', 'R_NAME', 'R_COMMENT'])
-            case "supplier.tbl":
-                df = pd.read_table(f'/data/{sf}/{t}', delimiter='|', names=['S_SUPPKEY', 'S_NAME', 'S_ADDRESS',
-                        'S_NATIONKEY', 'S_PHONE', 'S_ACCTBAL', 'S_COMMENT'])
-            case "partsupp.tbl":
-                df = pd.read_table(f'/data/{sf}/{t}', delimiter='|', names=['PS_PARTKEY', 'PS_SUPPKEY',
-                        'PS_AVAILQTY', 'PS_SUPPLYCOST', 'PS_COMMENT'])
-            case "part.tbl":
-                df = pd.read_table(f'/data/{sf}/{t}', delimiter='|', names=['P_PARTKEY', 'P_NAME', 'P_MFGR',
-                        'P_BRAND', 'P_TYPE', 'P_SIZE', 'P_CONTAINER', 'P_RETAILPRICE', 'P_COMMENT'])
-            case "customer.tbl":
-                df = pd.read_table(f'/data/{sf}/{t}', delimiter='|', names=['C_CUSTKEY', 'C_NAME', 'C_ADDRESS',
-                        'C_NATIONKEY', 'C_PHONE', 'C_ACCTBAL', 'C_MKTSEGMENT', 'C_COMMENT'])
-            case _:
-                continue
-        # Safe as csv-File
-        df.to_csv(f'/data/{sf}/{t.split(".")[0]}.csv', index=False)
-    print(" --> done")
-
-
-def createDDBView(con, sf):
-    print(f"Create DuckDB Views for {sf}..")
-    for t in os.listdir(f'/data/{sf}'):
-        if t.split(".")[1]=="csv":
-        # Add column names
-            match t:
-                case "orders.csv":
-                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
-                case "nation.csv":
-                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
-                case "lineitem.csv":
-                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
-                case "region.csv":
-                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
-                case "supplier.csv":
-                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
-                case "partsupp.csv":
-                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
-                case "part.csv":
-                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
-                case "customer.csv":
-                    con.sql(f"CREATE VIEW {sf}{t.split('.')[0]} AS FROM read_csv('/data/{sf}/{t}')")
-                case _:
-                    continue
-    print(" --> done")
-
-def insertDuckDB(con, sf):
-    for t in os.listdir(f'/data/{sf}'):
-        if t.split(".")[1]=="csv":
-            con.sql(f'CREATE TABLE {sf}{t.split(".")[0]} AS FROM read_csv("/data/{sf}/{t}");')
-        if t == 'lineitem.csv':
-            con.sql(f'CREATE TABLE {t.split(".")[0]} AS FROM read_csv("/data/{sf}/{t}");')
-
-
-def testDuckDB(query):
-    #global query_result
-    #print(f'\nQuery {query.q} on {query.sf}:\n')
-    times = []
-    try:
-        for i in range(4):
-            stCPU = time.process_time()
-            query_result = con.from_substrait(proto=query.proto)
-            etCPU = time.process_time()
-            resCPU = (etCPU - stCPU) * 1000
-            if (i == 1) | (i == 2) | (i == 3):
-                times.append(resCPU)
-        timeAVG = (times[0]+times[1]+times[2])/3
-        #print(query_result)
-        res_obj = TestResult('TPC-H', 'DuckDB', query.sf, query.q, query_result, times, timeAVG)
-        return res_obj
-    except Exception as e:
-        print(f"EXCEPTION: from_substrait() not working on {query.q.upper()}, {query.sf}: {repr(e)}")
-        #print(query.proto)
-        return None
-
-
-def prodSubstraitQuery(sf, q):
-    # Define sf substitution param
-    reg = re.compile(r"\$")
-
-    # Substitute table names with corresponding sf-table names
-    with open(f'/queries/tpch/{q}') as file:
-        subquery = re.sub(reg, sf, re.sub(reg, sf, re.sub(reg, sf, re.sub(reg, sf, re.sub(reg, sf, re.sub(reg,
-                    sf, re.sub(reg, sf, re.sub(reg, sf, file.read()))))))))
-
-    #print("SUBQUERY:")
-    #print(subquery)
-    #con.sql("PRAGMA disable_optimizer;")
-    #con.sql(subquery).show()
-
-    # Test
-    sql_t = con.get_substrait_json(query="SELECT * FROM sf1lineitem;")
-    test_proto = sql_t.fetchone()[0]
-    python_json = json.loads(test_proto)
-    dump = json.dumps(python_json, indent=2)
-    #print("Type:")
-    #print(type(dump))
-    #print(dump)
-
-
-    with open(f"/data/substrait/proto/test_q.txt", "w") as f:
-        f.write(test_proto)
-
-
-    res = con.from_substrait_json(test_proto)
-
-    print("RES:")
-    print(type(res))
-    print(res)
-
-
-    # Get the Substrait protobuf-Query, else restart duckdb and continue
-    try:
-        sub_json = con.get_substrait_json(subquery)
-        json_proto = sub_json.fetchone()[0]
-        python_json = json.loads(json_proto)
-        dump = json.dumps(python_json, indent=2)
-        with open(f"/data/substrait/json/{sf}_{q.split('.')[0]}_substrait.txt", 'w') as file:
-            file.write(dump)
-
-        sq_obj = SubstraitQuery(sf, q.split('.')[0], con.get_substrait(query=subquery).fetchone()[0])
-        with open(f"/data/substrait/proto/{sf}_{q.split('.')[0]}_substrait.proto", "wb") as f:
-            f.write(sq_obj.proto)
-        return sq_obj
-    except Exception as e:
-        print(f"EXCEPTION: get_substrait() not working on {q.split('.')[0]}, {sf}: {repr(e)}")
-        #print(f"SUBQUERY: {subquery}")
-        recon_ddb = restoreDuckDB()
-        return recon_ddb
-
+def get_sql_query(q):
+    with open(f'/queries/tpch_sql/{q}') as file:
+        query = file.read()
+    return query
 
 def plotResults(results, sf_plot):
     queries = ()
@@ -217,58 +57,117 @@ def plotResults(results, sf_plot):
 
     plt.savefig("/data/results/plots/tpch_plot.png")
 
+def get_isthmus_schema():
+    isthmus_schema = []
+    for file in os.listdir("/substrait_producer/isthmus_kit"):
+        if file.endswith(".sql"):
+            with open(f'/substrait_producer/isthmus_kit/{file}') as create_file:
+                create_sql = create_file.read()
+            isthmus_schema.append(create_sql)
 
-def connectDuckDB():
-    print('Connecting to DuckDB..')
-    con_ddb = duckdb.connect("data/duck.db")
-    con_ddb.install_extension("substrait")
-    con_ddb.load_extension("substrait")
-    print(' --> done\n')
-    return con_ddb
+    return isthmus_schema
 
+def create_tpch_data(scale_factor=0.1):
 
-def restoreDuckDB():
-    print(' --> restore duckdb..')
-    con.close()
-    recon = duckdb.connect("data/duck.db")
-    recon.install_extension("substrait")
-    recon.load_extension("substrait")
-    return recon
+    data_path = Path(__file__).parent / "data" / "tpch_csv"
+    data_path.mkdir(parents=True, exist_ok=True)
+    lock_file = data_path / "data.json"
+    with FileLock(str(lock_file) + ".lock"):
+        con = duckdb.connect()
+        con.execute(f"CALL dbgen(sf={scale_factor})")
+        con.execute(f"EXPORT DATABASE '{data_path}' (FORMAT CSV);")
+        con.close()
 
-def addToData(con, sf):
-    print(f'Creating and inserting {sf}-tables..')
-    createCSV(sf)
-    insertDuckDB(con, sf)
-    print(' --> done')
+    data_path = Path(__file__).parent / "data" / "tpch_parquet"
+    data_path.mkdir(parents=True, exist_ok=True)
+    lock_file = data_path / "data.json"
+    with FileLock(str(lock_file) + ".lock"):
+        con = duckdb.connect()
+        con.execute(f"CALL dbgen(sf={scale_factor})")
+        con.execute(f"EXPORT DATABASE '{data_path}' (FORMAT PARQUET);")
+        con.close()
+
 
 
 if __name__ == "__main__":
     print("\n\tExecution Engine Benchmark Test\n")
 
-    employees_data = {
-        'Name': ['John', 'Alice', 'Bob', 'Emily',
-                 'Michael', 'Sarah', 'Daniel', 'Emma'],
-        'Age': [25, 30, 35, 28, 32, 27, 31, 29],
-        'City': ['New York', 'Los Angeles', 'Chicago', 'New York',
-                 'New York', 'Miami', 'Chicago', 'Los Angeles']
-    }
-    salaries_data = {
-        'Name': ['John', 'Alice', 'Bob', 'Emily',
-                 'Michael', 'Sarah', 'Daniel', 'Emma'],
-        'Salary': [5000, 6000, 7000, 8000, 5500, 6500, 7500, 8500],
-        'Department': ['HR', 'IT', 'Finance', 'R&D',
-                       'IT', 'Finance', 'HR', 'R&D']
-    }
-    df_employees = pd.DataFrame(employees_data).to_csv("/data/test/employees.csv", index=False)
-    df_salaries = pd.DataFrame(salaries_data).to_csv("/data/test/salaries.csv", index=False)
+    # Create tables
+    sf = 0.1
+    create_tpch_data(sf)      #ToDo: Args
+
+    # Init
+    results = []    # list[TestResult]
+    isthmus_schema_list = get_isthmus_schema()
+
+    # Init Producers
+    duckdb_prod = duckdb_producer.DuckDBProducer(sf)
+    ibis_prod = ibis_producer.IbisProducer(sf, duckdb_prod.db_connection)
+    isthmus_prod = isthmus_producer.IsthmusProducer(sf)
+
+    # Init Tester
+    duckdb_parquet_cons = duckdb_parquet_tester.DuckDBParquetTester()
+    datafusion_parquet_cons = datafusion_parquet_tester.DataFusionParquetTester()
+    acero_parquet_cons = acero_parquet_tester.AceroConsumer()
 
 
-    # Create csv-Tables & ingest into DuckDB-db, if not yet there
+    # SQL
+    for q in os.listdir("/queries/tpch_sql"):
+
+        print("\n--------------------------------------------------------------------------")
+        print(f"\n\t{q.split('.')[0].upper()}:\n")
+
+        sql_query = get_sql_query(q)
+        duckdb_query = duckdb_prod.produce_substrait(sql_query, q)
+        ibis_query = ibis_prod.produce_substrait(q)
+        isthmus_query = isthmus_prod.produce_substrait(isthmus_schema_list, sql_query)
 
 
-    # Connect to DuckDB instance & load substrait extension
-    con = connectDuckDB()
+        # Format: consumer_producer_format_result
 
+        if duckdb_query is not None:
+            print("\n\nPRODUCER DuckDB:\n")
+            duckdb_duckdb_parquet_result = duckdb_parquet_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
+            if duckdb_duckdb_parquet_result is not None: results.append(duckdb_duckdb_parquet_result)
+
+            datafusion_duckdb_parquet_result = datafusion_parquet_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
+            if datafusion_duckdb_parquet_result is not None: results.append(datafusion_duckdb_parquet_result)
+
+            acero_duckdb_parquet_result = acero_parquet_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
+            if acero_duckdb_parquet_result is not None: results.append(acero_duckdb_parquet_result)
+
+        if ibis_query is not None:
+            print("\n\nPRODUCER Ibis:\n")
+            duckdb_ibis_parquet_result = duckdb_parquet_cons.test_substrait(ibis_query, q, sf, 'Ibis')
+            if duckdb_ibis_parquet_result is not None: results.append(duckdb_ibis_parquet_result)
+
+            datafusion_ibis_parquet_result = datafusion_parquet_cons.test_substrait(ibis_query, q, sf, 'Ibis')
+            if datafusion_ibis_parquet_result is not None: results.append(datafusion_ibis_parquet_result)
+
+            acero_ibis_parquet_result = acero_parquet_cons.test_substrait(ibis_query, q, sf, 'Ibis')
+            if acero_ibis_parquet_result is not None: results.append(acero_ibis_parquet_result)
+
+        if isthmus_query is not None:
+            print("\n\nPRODUCER Isthmus:\n")
+            duckdb_isthmus_parquet_result = duckdb_parquet_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
+            if duckdb_isthmus_parquet_result is not None: results.append(duckdb_isthmus_parquet_result)
+
+            datafusion_isthmus_parquet_result = datafusion_parquet_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
+            if datafusion_isthmus_parquet_result is not None: results.append(datafusion_isthmus_parquet_result)
+
+            acero_isthmus_parquet_result = acero_parquet_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
+            if acero_isthmus_parquet_result is not None: results.append(acero_isthmus_parquet_result)
+
+
+
+
+    # Print results
+    print("\n\n")
+    for r in results:
+        print(r.__str__())
+
+
+'''
     sf_plot = {}
     tab_rel = con.sql("SELECT table_name FROM duckdb_tables();").df()
     print('Checking if data already exists..')
@@ -311,7 +210,7 @@ if __name__ == "__main__":
     print('\n\tProducing Substrait Queries:\n\n')
     for sf in os.listdir("/data"):
         if sf.startswith("sf"):
-            for q in os.listdir("/queries/tpch"):
+            for q in os.listdir("/queries/tpch_sql"):
                 s_q = prodSubstraitQuery(sf, q)
                 if isinstance(s_q, SubstraitQuery):
                     substrait_queries.append(s_q)
@@ -345,11 +244,98 @@ if __name__ == "__main__":
         print(r.__str__())
 
     # Plot
-    plotResults(results, sf_plot)
+    #plotResults(results, sf_plot)
 
-    os.system("conda run -n test-db python tests.py")
+    #os.system("conda run -n test-db python tests.py")
+
+    # |-------|
+    # | Acero |
+    # |-------|
+
+    print("\n\tConsuming with Acero:\n\n")
+
+    for sf in os.listdir("/data"):
+        if sf.startswith("sf"):
+            orders = pa.csv.read_csv(f"/data/{sf}/orders.csv")
+            nation = pa.csv.read_csv(f"/data/{sf}/nation.csv")
+            lineitem = pa.csv.read_csv(f"/data/{sf}/lineitem.csv")
+            region = pa.csv.read_csv(f"/data/{sf}/region.csv")
+            supplier = pa.csv.read_csv(f"/data/{sf}/supplier.csv")
+            partsupp = pa.csv.read_csv(f"/data/{sf}/partsupp.csv")
+            part = pa.csv.read_csv(f"/data/{sf}/part.csv")
+            customer = pa.csv.read_csv(f"/data/{sf}/customer.csv")
 
 
+            def table_provider(names, schema):
+                if not names:
+                    raise Exception("No names provided")
+                elif names[0] == f"{sf}orders":
+                    return orders
+                elif names[0] == f"{sf}nation":
+                    return nation
+                elif names[0] == f"{sf}lineitem":
+                    return lineitem
+                elif names[0] == f"{sf}region":
+                    return region
+                elif names[0] == f"{sf}supplier":
+                    return supplier
+                elif names[0] == f"{sf}partsupp":
+                    return partsupp
+                elif names[0] == f"{sf}part":
+                    return part
+                elif names[0] == f"{sf}customer":
+                    return customer
+                else:
+                    raise Exception("Unrecognized table name")
+
+
+            for p_sf in os.listdir("/data/substrait/proto"):
+                if p_sf.startswith(sf):
+                    try:
+                        substrait_bytes = None
+                        with open(f"/data/substrait/proto/{p_sf}", "rb") as f:
+                            substrait_bytes = f.read()
+
+                        reader = substrait.run_query(
+                            substrait_bytes, table_provider=table_provider
+                        )
+                        result = reader.read_all().to_pandas()
+                        print(f"Acero result on {p_sf.split('_')[1].upper()}:")
+                        print(result)
+                    except Exception as e:
+                        print(f"ACERO Exception with {p_sf.split('_')[1].upper()} on {p_sf.split('_')[0]}:")
+                        print(f" Error: {repr(e)}\n")
+
+    with open('data/temp/substrait_queries.json', 'r') as f:
+        sq_data = json.load(f)
+    print("SQ Data")
+    print(sq_data)
+
+    # |------------|
+    # | Datafusion |
+    # |------------|
+
+    print("\n\tConsuming with Datafusion:\n\n")
+
+    # Get datafusion context obj
+    ctx = getSessionContextDF()
+
+    #  Get query-protobuf and execute
+    for pf in os.listdir("/data/substrait/proto"):
+        if not (pf.split('_')[1] == 'q18'):
+            with open(f"data/substrait/proto/{pf}", 'rb') as f:
+                proto_q = f.read()
+
+            substrait_plan = ss.substrait.serde.deserialize_bytes(proto_q)
+
+            try:
+                df_logical_plan = ss.substrait.consumer.from_substrait_plan(ctx, substrait_plan)
+                results = ctx.create_dataframe_from_logical_plan(df_logical_plan)
+                print(f"Datafusion: {pf.split('_')[1].upper()} on {pf.split('_')[0]}:")
+                print(results)
+            except Exception as e:
+                print(f"DATAFUSION Exception with {pf.split('_')[1].upper()} on {pf.split('_')[0]}:")
+                print(f" Error: {repr(e)}\n")
 
 
 
@@ -361,8 +347,10 @@ if __name__ == "__main__":
 # tpch_generator
 # sudo make build
 # docker volume create test-data
-# docker run -it --rm -v test-data:/data --name tpch-generator tpch-generator
+# docker run -it --rm -v test-data:/data --name tpch_sql-generator tpch_sql-generator
 
 # run tests
 # sudo make build
 # sudo docker run -it --rm --name=test --mount source=test-data,destination=/data benchmark_test
+
+'''
