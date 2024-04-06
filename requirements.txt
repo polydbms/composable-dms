@@ -13,3 +13,4 @@ pytest-xdist
 substrait
 substrait-validator
 python-dateutil
+pyvelox

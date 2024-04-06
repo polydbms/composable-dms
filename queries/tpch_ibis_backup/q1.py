@@ -1,7 +1,7 @@
 "Pricing Summary Report Query (Q1)"
 
 
-from .utils import add_date, date_obj
+from .utils import add_date
 
 
 def tpc_h01(con, DELTA=90, DATE="1998-12-01"):
@@ -31,7 +31,7 @@ def tpc_h01(con, DELTA=90, DATE="1998-12-01"):
         avg_qty=t.l_quantity.mean(),
         avg_price=t.l_extendedprice.mean(),
         avg_disc=t.l_discount.mean(),
-        #count_order=t.count(),
+        count_order=t.count(),
     )
     q = q.order_by(["l_returnflag", "l_linestatus"])
     return q

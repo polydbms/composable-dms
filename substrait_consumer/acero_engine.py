@@ -19,18 +19,21 @@ class AceroConsumer():
                 table_name = table_name.translate(
                     str.maketrans("", "", string.punctuation)
                 )
-                print("ACERO table path:")
-                print(data_path+file)
+                #print("ACERO table path:")
+                #print(data_path+file)
                 self.tables[table_name] = pq.read_table(data_path+file)
 
     def test_substrait(self, substrait_query, q, sf, producer):
 
+        #print(substrait_query)
         times = []
+        encoded_substrait = substrait_query.encode()
+
         try:
             for i in range(4):
                 stCPU = time.process_time()
 
-                substrait_query = pa._substrait._parse_json_plan(substrait_query.encode())
+                substrait_query = pa._substrait._parse_json_plan(encoded_substrait)
 
                 reader = substrait.run_query(
                     substrait_query, table_provider=self.table_provider
@@ -43,12 +46,12 @@ class AceroConsumer():
                     times.append(resCPU)
             timeAVG = (times[0] + times[1] + times[2]) / 3
             # print(query_result)
-            res_obj = TestResult('TPC-H', 'Acero', 'Parquet', producer, sf, q.split('.')[0], query_result, times,
+            res_obj = TestResult('TPC-H', 'Substrait', 'Acero', 'Parquet', producer, sf, q.split('.')[0], query_result, times,
                                  timeAVG)
             print(f"TEST Acero\t\tSUCCESS")
 
             return res_obj
 
         except Exception as e:
-            print(f"TEST Acero\t\tEXCEPTION: Substrait not working: {repr(e)}")
+            print(f"TEST Acero\t\tEXCEPTION: Substrait not working: {repr(e)[:100]}")
             return None

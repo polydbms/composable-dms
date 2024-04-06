@@ -21,7 +21,6 @@ class DuckDBProducer:
             with open(file_name, "w") as outfile:
                 outfile.write(json.dumps(python_json, indent=4))
             print(f"PROD DuckDB\t\tPROD SUCCESS")
-
             return json.dumps(python_json, indent=2)
 
         except Exception as e:

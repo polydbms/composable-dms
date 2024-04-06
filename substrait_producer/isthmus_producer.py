@@ -29,6 +29,7 @@ class IsthmusProducer:
         arr = java.ArrayListClass()
 
         for create_table in schema_list:
+            #print(create_table)
             java_obj = jpype.JObject @ jpype.JString(create_table)
             arr.add(java_obj)
 

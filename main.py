@@ -19,11 +19,11 @@ from filelock import FileLock
 from test_result import TestResult
 
 from substrait_producer import duckdb_producer, ibis_producer, isthmus_producer
-from substrait_consumer import duckdb_parquet_tester, datafusion_parquet_tester, acero_parquet_tester
+from substrait_consumer import duckdb_engine, datafusion_engine, acero_engine
 
 
-def get_sql_query(q):
-    with open(f'/queries/tpch_sql/{q}') as file:
+def get_sql_query(q, qs):
+    with open(f'/queries/{qs}/{q}') as file:
         query = file.read()
     return query
 
@@ -64,7 +64,7 @@ def get_isthmus_schema():
             with open(f'/substrait_producer/isthmus_kit/{file}') as create_file:
                 create_sql = create_file.read()
             isthmus_schema.append(create_sql)
-
+    #print(isthmus_schema)
     return isthmus_schema
 
 def create_tpch_data(scale_factor=0.1):
@@ -99,67 +99,69 @@ if __name__ == "__main__":
     # Init
     results = []    # list[TestResult]
     isthmus_schema_list = get_isthmus_schema()
+    query_set = "tpch_sql_backup"
 
     # Init Producers
     duckdb_prod = duckdb_producer.DuckDBProducer(sf)
-    ibis_prod = ibis_producer.IbisProducer(sf, duckdb_prod.db_connection)
+    ibis_prod = ibis_producer.IbisProducer(sf)
     isthmus_prod = isthmus_producer.IsthmusProducer(sf)
 
     # Init Tester
-    duckdb_parquet_cons = duckdb_parquet_tester.DuckDBParquetTester()
-    datafusion_parquet_cons = datafusion_parquet_tester.DataFusionParquetTester()
-    acero_parquet_cons = acero_parquet_tester.AceroConsumer()
+    duckdb_cons = duckdb_engine.DuckDBConsumer()
+    datafusion_cons = datafusion_engine.DataFusionConsumer()
+    datafusion_isthmus_cons = datafusion_engine.DataFusionConsumer('Isthmus')
+    acero_cons = acero_engine.AceroConsumer()
 
 
     # SQL
-    for q in os.listdir("/queries/tpch_sql"):
+    for q in os.listdir(f"/queries/{query_set}"):
 
         print("\n--------------------------------------------------------------------------")
         print(f"\n\t{q.split('.')[0].upper()}:\n")
 
-        sql_query = get_sql_query(q)
+        sql_query = get_sql_query(q, query_set)
         duckdb_query = duckdb_prod.produce_substrait(sql_query, q)
         ibis_query = ibis_prod.produce_substrait(q)
         isthmus_query = isthmus_prod.produce_substrait(isthmus_schema_list, sql_query)
-
-
         # Format: consumer_producer_format_result
-
         if duckdb_query is not None:
             print("\n\nPRODUCER DuckDB:\n")
-            duckdb_duckdb_parquet_result = duckdb_parquet_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
+            duckdb_duckdb_parquet_result = duckdb_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
             if duckdb_duckdb_parquet_result is not None: results.append(duckdb_duckdb_parquet_result)
 
-            datafusion_duckdb_parquet_result = datafusion_parquet_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
+            datafusion_duckdb_parquet_result = datafusion_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
             if datafusion_duckdb_parquet_result is not None: results.append(datafusion_duckdb_parquet_result)
 
-            acero_duckdb_parquet_result = acero_parquet_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
+            acero_duckdb_parquet_result = acero_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
             if acero_duckdb_parquet_result is not None: results.append(acero_duckdb_parquet_result)
 
         if ibis_query is not None:
             print("\n\nPRODUCER Ibis:\n")
-            duckdb_ibis_parquet_result = duckdb_parquet_cons.test_substrait(ibis_query, q, sf, 'Ibis')
+            duckdb_ibis_parquet_result = duckdb_cons.test_substrait(ibis_query, q, sf, 'Ibis')
             if duckdb_ibis_parquet_result is not None: results.append(duckdb_ibis_parquet_result)
 
-            datafusion_ibis_parquet_result = datafusion_parquet_cons.test_substrait(ibis_query, q, sf, 'Ibis')
+            datafusion_ibis_parquet_result = datafusion_cons.test_substrait(ibis_query, q, sf, 'Ibis')
             if datafusion_ibis_parquet_result is not None: results.append(datafusion_ibis_parquet_result)
 
-            acero_ibis_parquet_result = acero_parquet_cons.test_substrait(ibis_query, q, sf, 'Ibis')
+            acero_ibis_parquet_result = acero_cons.test_substrait(ibis_query, q, sf, 'Ibis')
             if acero_ibis_parquet_result is not None: results.append(acero_ibis_parquet_result)
 
         if isthmus_query is not None:
             print("\n\nPRODUCER Isthmus:\n")
-            duckdb_isthmus_parquet_result = duckdb_parquet_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
+            duckdb_isthmus_parquet_result = duckdb_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
             if duckdb_isthmus_parquet_result is not None: results.append(duckdb_isthmus_parquet_result)
 
-            datafusion_isthmus_parquet_result = datafusion_parquet_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
+            datafusion_isthmus_parquet_result = datafusion_isthmus_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
             if datafusion_isthmus_parquet_result is not None: results.append(datafusion_isthmus_parquet_result)
 
-            acero_isthmus_parquet_result = acero_parquet_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
+            acero_isthmus_parquet_result = acero_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
             if acero_isthmus_parquet_result is not None: results.append(acero_isthmus_parquet_result)
+        ### SQL
+        duckdb_sql_parquet_result = duckdb_cons.test_sql(sql_query, q, sf)
+        if duckdb_sql_parquet_result is not None: results.append(duckdb_sql_parquet_result)
 
-
-
+        datafusion_sql_parquet_result = datafusion_cons.test_sql(sql_query, q, sf)
+        if datafusion_sql_parquet_result is not None: results.append(datafusion_sql_parquet_result)
 
     # Print results
     print("\n\n")
@@ -168,177 +170,16 @@ if __name__ == "__main__":
 
 
 '''
-    sf_plot = {}
-    tab_rel = con.sql("SELECT table_name FROM duckdb_tables();").df()
-    print('Checking if data already exists..')
-    # Create csv - Views
-    for sf in os.listdir("/data"):
-        if sf.startswith("sf"):                   # Temp
-            sf_plot.update({sf: ()})
-            csv = False
-            tables = False
-            for f in os.listdir(f"/data/{sf}"):
-                if f == "customer.csv":
-                    csv = True
-                    print(f" --> csv data found for {sf}")
-            for t in tab_rel['table_name']:
-                if t.startswith(sf):
-                    tables = True
-            if not csv:
-                createCSV(sf)
-                #createPARQUET()
-            if not tables:
-                insertDuckDB(con, sf)
-                #createDDBView(con, sf)
-
-    #print("DuckDB Views:")
-    #print(con.sql("SELECT view_name FROM duckdb_views();").df().to_string())
-
-
-    #Parquet test
-    con.sql("COPY sf1lineitem TO '/data/test/sf1lineitem.parquet' (FORMAT PARQUET);")
-
-    # DuckDB overview
-    #con.sql("SELECT * FROM information_schema.schemata").show()
-    con.sql("SELECT * FROM information_schema.tables").show()
-    #con.sql("SELECT * FROM information_schema.columns").show(max_rows=100000, max_col_with=100000)
-
-
-    # Get Substrait queries
-    substrait_queries = []  # list[SubstraitQuery]
-
-    print('\n\tProducing Substrait Queries:\n\n')
-    for sf in os.listdir("/data"):
-        if sf.startswith("sf"):
-            for q in os.listdir("/queries/tpch_sql"):
-                s_q = prodSubstraitQuery(sf, q)
-                if isinstance(s_q, SubstraitQuery):
-                    substrait_queries.append(s_q)
-                else:
-                    con = s_q
-
-
-    # Check SubstraitQuery Objects
-    #print("Results Substrait queries:")
-    #for s in substrait_queries:
-    #    print(s.__str__())
-
     # Save Substrait Queries as json
     #for it in substrait_queries:
     #    with open('/data/substrait/json/substrait_queries.json', 'a+') as f:
     #        json.dump(it.__dict__(), f)
 
-    print("\n\n\tConsuming with DuckDB:\n\n")
-
-    # Test DuckDB Engine with different queries & different sf
-    results = []    # list[TestResult]
-
-    print('Run query tests..\n')
-    for query in substrait_queries:
-        t_r = testDuckDB(query)
-        if t_r is not None:
-            results.append(t_r)
-
-    print("\nResults DuckDB:\n")
-    for r in results:
-        print(r.__str__())
 
     # Plot
     #plotResults(results, sf_plot)
 
     #os.system("conda run -n test-db python tests.py")
-
-    # |-------|
-    # | Acero |
-    # |-------|
-
-    print("\n\tConsuming with Acero:\n\n")
-
-    for sf in os.listdir("/data"):
-        if sf.startswith("sf"):
-            orders = pa.csv.read_csv(f"/data/{sf}/orders.csv")
-            nation = pa.csv.read_csv(f"/data/{sf}/nation.csv")
-            lineitem = pa.csv.read_csv(f"/data/{sf}/lineitem.csv")
-            region = pa.csv.read_csv(f"/data/{sf}/region.csv")
-            supplier = pa.csv.read_csv(f"/data/{sf}/supplier.csv")
-            partsupp = pa.csv.read_csv(f"/data/{sf}/partsupp.csv")
-            part = pa.csv.read_csv(f"/data/{sf}/part.csv")
-            customer = pa.csv.read_csv(f"/data/{sf}/customer.csv")
-
-
-            def table_provider(names, schema):
-                if not names:
-                    raise Exception("No names provided")
-                elif names[0] == f"{sf}orders":
-                    return orders
-                elif names[0] == f"{sf}nation":
-                    return nation
-                elif names[0] == f"{sf}lineitem":
-                    return lineitem
-                elif names[0] == f"{sf}region":
-                    return region
-                elif names[0] == f"{sf}supplier":
-                    return supplier
-                elif names[0] == f"{sf}partsupp":
-                    return partsupp
-                elif names[0] == f"{sf}part":
-                    return part
-                elif names[0] == f"{sf}customer":
-                    return customer
-                else:
-                    raise Exception("Unrecognized table name")
-
-
-            for p_sf in os.listdir("/data/substrait/proto"):
-                if p_sf.startswith(sf):
-                    try:
-                        substrait_bytes = None
-                        with open(f"/data/substrait/proto/{p_sf}", "rb") as f:
-                            substrait_bytes = f.read()
-
-                        reader = substrait.run_query(
-                            substrait_bytes, table_provider=table_provider
-                        )
-                        result = reader.read_all().to_pandas()
-                        print(f"Acero result on {p_sf.split('_')[1].upper()}:")
-                        print(result)
-                    except Exception as e:
-                        print(f"ACERO Exception with {p_sf.split('_')[1].upper()} on {p_sf.split('_')[0]}:")
-                        print(f" Error: {repr(e)}\n")
-
-    with open('data/temp/substrait_queries.json', 'r') as f:
-        sq_data = json.load(f)
-    print("SQ Data")
-    print(sq_data)
-
-    # |------------|
-    # | Datafusion |
-    # |------------|
-
-    print("\n\tConsuming with Datafusion:\n\n")
-
-    # Get datafusion context obj
-    ctx = getSessionContextDF()
-
-    #  Get query-protobuf and execute
-    for pf in os.listdir("/data/substrait/proto"):
-        if not (pf.split('_')[1] == 'q18'):
-            with open(f"data/substrait/proto/{pf}", 'rb') as f:
-                proto_q = f.read()
-
-            substrait_plan = ss.substrait.serde.deserialize_bytes(proto_q)
-
-            try:
-                df_logical_plan = ss.substrait.consumer.from_substrait_plan(ctx, substrait_plan)
-                results = ctx.create_dataframe_from_logical_plan(df_logical_plan)
-                print(f"Datafusion: {pf.split('_')[1].upper()} on {pf.split('_')[0]}:")
-                print(results)
-            except Exception as e:
-                print(f"DATAFUSION Exception with {pf.split('_')[1].upper()} on {pf.split('_')[0]}:")
-                print(f" Error: {repr(e)}\n")
-
-
-
 
 # graphviz
 # grafisch

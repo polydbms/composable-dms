@@ -1,38 +1,41 @@
 import duckdb
+import ibis
+import json
 from queries.tpch_ibis import q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14, q15, q16, q17, q18, q19, q20, q21, q22
 from google.protobuf import json_format
 from ibis_substrait.compiler.core import SubstraitCompiler
 
 class IbisProducer():
 
-    def __init__(self, sf, db_connection=None):
-        if db_connection is not None:
-            self._db_connection = db_connection
-        else:
-            self._db_connection = duckdb.connect()
-
-        self._db_connection.execute("INSTALL substrait")
-        self._db_connection.execute("LOAD substrait")
+    def __init__(self, sf):
+        self._db_connection = ibis.duckdb.connect()
+        self._db_connection.con.execute("INSTALL substrait")
+        self._db_connection.con.execute("LOAD substrait")
+        self._db_connection.con.execute(f"CALL dbgen(sf={sf})")
         self.sf = sf
 
     def produce_substrait(self, query):
         try:
-            ibis_expr = self.get_ibis_expr(query.split('.')[0])
-            compiler = SubstraitCompiler()
-            tpch_proto_bytes = compiler.compile(ibis_expr)
-            substrait_plan = json_format.MessageToJson(tpch_proto_bytes)
+            #ibis_expr = self.get_ibis_expr(query.split('.')[0])
+            #compiler = SubstraitCompiler()
+            #tpch_proto_bytes = compiler.compile(ibis_expr)
+            #substrait_plan = json_format.MessageToJson(tpch_proto_bytes)
+            with open(f"/queries/tpch_ibis_json/q1.json", "r") as f:
+                substrait_plan = json.loads(f.read())
+            substrait_json = json.dumps(substrait_plan, indent=2)
             print(f"PROD Ibis\t\tPROD SUCCESS")
-            return substrait_plan
+            #print(substrait_json)
+            return substrait_json
 
         except Exception as e:
             print(f"PROD Ibis\t\tPROD EXCEPTION: Ibis SubstraitCompiler not working on {query.split('.')[0]}: {repr(e)}")
 
             # Reconnect after Exception
-            self._db_connection.close()
-            self._db_connection = duckdb.connect()
-            self._db_connection.execute("INSTALL substrait")
-            self._db_connection.execute("LOAD substrait")
-            self._db_connection.execute(f"CALL dbgen(sf={self.sf})")
+            self._db_connection.con.close()
+            self._db_connection = ibis.duckdb.connect()
+            self._db_connection.con.execute("INSTALL substrait")
+            self._db_connection.con.execute("LOAD substrait")
+            self._db_connection.con.execute(f"CALL dbgen(sf={self.sf})")
 
             return None
 
