@@ -14,4 +14,4 @@ substrait
 substrait-validator
 python-dateutil
 pyvelox
-polars
+polars-lts-cpu
