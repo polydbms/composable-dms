@@ -1,10 +1,8 @@
 import os
-#import pandas as pd
+import polars as pl
 import duckdb
 #import time
 #import re
-import matplotlib.pyplot as plt
-import numpy as np
 #import json
 
 import pyarrow as pa
@@ -18,44 +16,15 @@ from pathlib import Path
 from filelock import FileLock
 from test_result import TestResult
 
-from substrait_producer import duckdb_producer, ibis_producer, isthmus_producer
+from substrait_producer import duckdb_producer, ibis_producer, isthmus_producer, datafusion_producer
 from substrait_consumer import duckdb_engine, datafusion_engine, acero_engine
+import plotter as plt
 
 
 def get_sql_query(q, qs):
     with open(f'/queries/{qs}/{q}') as file:
         query = file.read()
     return query
-
-def plotResults(results, sf_plot):
-    queries = ()
-    for i in range(1, 23):
-        count = True
-        for res in results:
-            if res.q[1:] == str(i):
-                if count: queries += (res.q.upper(),)
-                count = False
-                sf_plot[res.sf] += (round(res.runtime, 2),)
-
-    x = np.arange(len(queries))
-    width = 0.4
-    multiplier = 0
-
-    fig, ax = plt.subplots(figsize=(20,10))
-
-    for sf_attr, measurement in sf_plot.items():
-        offset = width * multiplier
-        rects = ax.bar(x + offset, measurement, width, label=sf_attr)
-        ax.bar_label(rects, padding=3)
-        multiplier += 1
-
-    ax.set_ylabel('CPU runtime in ms')
-    ax.set_title('TPC-H Queries on DuckDB')
-    ax.set_xticks(x+(width/2), queries)
-    ax.legend(loc='upper left', ncols=len(sf_plot))
-    ax.set_ylim(0, 22)
-
-    plt.savefig("/data/results/plots/tpch_plot.png")
 
 def get_isthmus_schema():
     isthmus_schema = []
@@ -87,26 +56,89 @@ def create_tpch_data(scale_factor=0.1):
         con.execute(f"EXPORT DATABASE '{data_path}' (FORMAT PARQUET);")
         con.close()
 
+def create_csv_results(results, sf, query_set):
+    df = pl.DataFrame()
+    filename = f"tpch_measurements_sf{sf}_{query_set.split('_')[2]}.csv"
+    df = df.with_columns((pl.Series(["DuckDB", "Ibis", "DataFusion", "Isthmus"])).alias("Producer"))
+    for i in range(1, 23):
+        duckdb_col = []
+        datafusion_col = []
+        acero_col = []
+        for r in results:
+            if (r.q[1:] == str(i)) and (r.producer == 'DuckDB'):
+                if r.engine == 'DuckDB':
+                    duckdb_col.append(r.runtime)
+                elif r.engine == 'DataFusion':
+                    datafusion_col.append(r.runtime)
+                elif r.engine == 'Acero':
+                    acero_col.append(r.runtime)
+        if len(duckdb_col) == 0: duckdb_col.append(0)
+        if len(datafusion_col) == 0: datafusion_col.append(0)
+        if len(acero_col) == 0: acero_col.append(0)
 
+        for r in results:
+            if (r.q[1:] == str(i)) and (r.producer == 'Ibis'):
+                if r.engine == 'DuckDB':
+                    duckdb_col.append(r.runtime)
+                elif r.engine == 'DataFusion':
+                    datafusion_col.append(r.runtime)
+                elif r.engine == 'Acero':
+                    acero_col.append(r.runtime)
+        if len(duckdb_col) == 1: duckdb_col.append(0)
+        if len(datafusion_col) == 1: datafusion_col.append(0)
+        if len(acero_col) == 1: acero_col.append(0)
+
+        for r in results:
+            if (r.q[1:] == str(i)) and (r.producer == 'DataFusion'):
+                if r.engine == 'DuckDB':
+                    duckdb_col.append(r.runtime)
+                elif r.engine == 'DataFusion':
+                    datafusion_col.append(r.runtime)
+                elif r.engine == 'Acero':
+                    acero_col.append(r.runtime)
+        if len(duckdb_col) == 2: duckdb_col.append(0)
+        if len(datafusion_col) == 2: datafusion_col.append(0)
+        if len(acero_col) == 2: acero_col.append(0)
+
+        for r in results:
+            if (r.q[1:] == str(i)) and (r.producer == 'Isthmus'):
+                if r.engine == 'DuckDB':
+                    duckdb_col.append(r.runtime)
+                elif r.engine == 'DataFusion':
+                    datafusion_col.append(r.runtime)
+                elif r.engine == 'Acero':
+                    acero_col.append(r.runtime)
+        if len(duckdb_col) == 3: duckdb_col.append(0)
+        if len(datafusion_col) == 3: datafusion_col.append(0)
+        if len(acero_col) == 3: acero_col.append(0)
+
+        df = df.with_columns((pl.Series(duckdb_col)).alias(f"Q{i}_duckdb"))
+        df = df.with_columns((pl.Series(datafusion_col)).alias(f"Q{i}_datafusion"))
+        df = df.with_columns((pl.Series(acero_col)).alias(f"Q{i}_acero"))
+
+    df.write_csv(f"/data/results/csv/{filename}")
 
 if __name__ == "__main__":
     print("\n\tExecution Engine Benchmark Test\n")
 
     # Create tables
-    sf = 0.1
+    #sf = 0.1
+    sf = 0.5
     create_tpch_data(sf)      #ToDo: Args
 
     # Init
     results = []    # list[TestResult]
     isthmus_schema_list = get_isthmus_schema()
-    query_set = "tpch_sql_backup"
+    #query_set = "tpch_sql_original"
+    query_set = "tpch_sql_reduced"
 
-    # Init Producers
+    # Init Producer
     duckdb_prod = duckdb_producer.DuckDBProducer(sf)
     ibis_prod = ibis_producer.IbisProducer(sf)
     isthmus_prod = isthmus_producer.IsthmusProducer(sf)
+    datafusion_prod = datafusion_producer.DataFusionProducer()
 
-    # Init Tester
+    # Init Consumer
     duckdb_cons = duckdb_engine.DuckDBConsumer()
     datafusion_cons = datafusion_engine.DataFusionConsumer()
     datafusion_isthmus_cons = datafusion_engine.DataFusionConsumer('Isthmus')
@@ -119,11 +151,17 @@ if __name__ == "__main__":
         print("\n--------------------------------------------------------------------------")
         print(f"\n\t{q.split('.')[0].upper()}:\n")
 
+
         sql_query = get_sql_query(q, query_set)
+
         duckdb_query = duckdb_prod.produce_substrait(sql_query, q)
         ibis_query = ibis_prod.produce_substrait(q)
         isthmus_query = isthmus_prod.produce_substrait(isthmus_schema_list, sql_query)
+        datafusion_query = datafusion_prod.produce_substrait(sql_query, q)
+
+
         # Format: consumer_producer_format_result
+
         if duckdb_query is not None:
             print("\n\nPRODUCER DuckDB:\n")
             duckdb_duckdb_parquet_result = duckdb_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
@@ -156,18 +194,47 @@ if __name__ == "__main__":
 
             acero_isthmus_parquet_result = acero_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
             if acero_isthmus_parquet_result is not None: results.append(acero_isthmus_parquet_result)
+
+        if datafusion_query is not None:
+            print("\n\nPRODUCER DataFusion:\n")
+            duckdb_datafusion_parquet_result = duckdb_cons.test_substrait(datafusion_query, q, sf, 'DataFusion')
+            if duckdb_datafusion_parquet_result is not None: results.append(duckdb_datafusion_parquet_result)
+
+            datafusion_datafusion_parquet_result = datafusion_cons.test_substrait(datafusion_query, q, sf, 'DataFusion')
+            if datafusion_datafusion_parquet_result is not None: results.append(datafusion_datafusion_parquet_result)
+
+            acero_datafusion_parquet_result = acero_cons.test_substrait(datafusion_query, q, sf, 'DataFusion')
+            if acero_datafusion_parquet_result is not None: results.append(acero_datafusion_parquet_result)
+
+
         ### SQL
+        print("\nSQL\n")
         duckdb_sql_parquet_result = duckdb_cons.test_sql(sql_query, q, sf)
         if duckdb_sql_parquet_result is not None: results.append(duckdb_sql_parquet_result)
-
         datafusion_sql_parquet_result = datafusion_cons.test_sql(sql_query, q, sf)
         if datafusion_sql_parquet_result is not None: results.append(datafusion_sql_parquet_result)
 
     # Print results
-    print("\n\n")
-    for r in results:
-        print(r.__str__())
+    count = 0
+    for i in range(1,23):
+        print("-----------------------------------------------------------------------------------\n\n")
+        print(f"Results for Q{i}:")
+        print("\n")
+        q_count = 0
+        for r in results:
+            if r.q[1:] == str(i):
+                count += 1
+                q_count += 1
+                print(r.__str__())
+        print(f"\n\tCount: {q_count}\n")
 
+    print(f"\nCOUNT: {count}\n")
+
+    # Create csv-Files with Results
+
+    create_csv_results(results, sf, query_set)
+
+    #
 
 '''
     # Save Substrait Queries as json
@@ -177,7 +244,7 @@ if __name__ == "__main__":
 
 
     # Plot
-    #plotResults(results, sf_plot)
+    plotResults(results, sf_plot)
 
     #os.system("conda run -n test-db python tests.py")
 

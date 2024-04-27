@@ -20,7 +20,7 @@ class IbisProducer():
             #compiler = SubstraitCompiler()
             #tpch_proto_bytes = compiler.compile(ibis_expr)
             #substrait_plan = json_format.MessageToJson(tpch_proto_bytes)
-            with open(f"/queries/tpch_ibis_json/q1.json", "r") as f:
+            with open(f"/queries/tpch_ibis_json/{query.split('.')[0]}.json", "r") as f:
                 substrait_plan = json.loads(f.read())
             substrait_json = json.dumps(substrait_plan, indent=2)
             print(f"PROD Ibis\t\tPROD SUCCESS")
