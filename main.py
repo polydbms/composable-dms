@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     # Create tables
     #sf = 0.1
-    sf = 0.5
+    sf = 1
     create_tpch_data(sf)      #ToDo: Args
 
     # Init
