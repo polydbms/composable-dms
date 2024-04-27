@@ -59,7 +59,11 @@ def create_tpch_data(scale_factor=0.1):
 def create_csv_results(results, sf, query_set):
     df = pl.DataFrame()
     filename = f"tpch_measurements_sf{sf}_{query_set.split('_')[2]}.csv"
-    df = df.with_columns((pl.Series(["DuckDB", "Ibis", "DataFusion", "Isthmus"])).alias("Producer"))
+    if query_set.split('_')[2] != "original":
+        df = df.with_columns((pl.Series(["DuckDB", "Ibis", "DataFusion", "Isthmus"])).alias("Producer"))
+    else:
+        df = df.with_columns((pl.Series(["DuckDB", "Ibis", "DataFusion", "Isthmus", "SQL"])).alias("Producer"))
+
     for i in range(1, 23):
         duckdb_col = []
         datafusion_col = []
@@ -112,6 +116,19 @@ def create_csv_results(results, sf, query_set):
         if len(datafusion_col) == 3: datafusion_col.append(0)
         if len(acero_col) == 3: acero_col.append(0)
 
+        if query_set.split('_')[2] == "original":
+            for r in results:
+                if (r.q[1:] == str(i)) and (r.producer == '-- SQL'):
+                    if r.engine == 'DuckDB':
+                        duckdb_col.append(r.runtime)
+                    elif r.engine == 'DataFusion':
+                        datafusion_col.append(r.runtime)
+                    elif r.engine == 'Acero':
+                        acero_col.append(r.runtime)
+            if len(duckdb_col) == 4: duckdb_col.append(0)
+            if len(datafusion_col) == 4: datafusion_col.append(0)
+            if len(acero_col) == 4: acero_col.append(0)
+
         df = df.with_columns((pl.Series(duckdb_col)).alias(f"Q{i}_duckdb"))
         df = df.with_columns((pl.Series(datafusion_col)).alias(f"Q{i}_datafusion"))
         df = df.with_columns((pl.Series(acero_col)).alias(f"Q{i}_acero"))
@@ -129,8 +146,8 @@ if __name__ == "__main__":
     # Init
     results = []    # list[TestResult]
     isthmus_schema_list = get_isthmus_schema()
-    #query_set = "tpch_sql_original"
-    query_set = "tpch_sql_reduced"
+    query_set = "tpch_sql_original"
+    #query_set = "tpch_sql_reduced"
 
     # Init Producer
     duckdb_prod = duckdb_producer.DuckDBProducer(sf)
