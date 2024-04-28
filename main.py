@@ -133,7 +133,10 @@ def create_csv_results(results, sf, query_set):
         df = df.with_columns((pl.Series(datafusion_col)).alias(f"Q{i}_datafusion"))
         df = df.with_columns((pl.Series(acero_col)).alias(f"Q{i}_acero"))
 
-    df.write_csv(f"/data/results/csv/{filename}")
+    df.write_csv(f"/data/{filename}")
+
+    os.system(f"docker cp test:/data/{filename} /home/chris/data/{filename}")
+    print("Successfully copied data to host")
 
 if __name__ == "__main__":
     print("\n\tExecution Engine Benchmark Test\n")
