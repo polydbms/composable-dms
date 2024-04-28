@@ -142,14 +142,14 @@ if __name__ == "__main__":
     print("\n\tExecution Engine Benchmark Test\n")
 
     # Create tables
-    #sf = 0.1
-    sf = 1
-    create_tpch_data(sf)      #ToDo: Args
+    sf = input("Enter SF: ")
+    create_tpch_data(sf)
 
     # Init
     results = []    # list[TestResult]
     isthmus_schema_list = get_isthmus_schema()
-    query_set = "tpch_sql_original"
+    query_set = input("Enter query set (tpch_sql_original | tpch_sql_reduced): ")
+    #query_set = "tpch_sql_original"
     #query_set = "tpch_sql_reduced"
 
     # Init Producer
