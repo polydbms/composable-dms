@@ -135,8 +135,8 @@ def create_csv_results(results, sf, query_set):
 
     df.write_csv(f"/data/{filename}")
 
-    os.system(f"docker cp test:/data/{filename} /home/chris/data/{filename}")
-    print("Successfully copied data to host")
+    print("Successfully created result csv-file")
+    input("Press Enter after you \'docker cp\' the results to the host to exit the container...")
 
 if __name__ == "__main__":
     print("\n\tExecution Engine Benchmark Test\n")
@@ -280,5 +280,7 @@ if __name__ == "__main__":
 # run tests
 # sudo make build
 # sudo docker run -it --rm --name=test --mount source=test-data,destination=/data benchmark_test
+
+# os.system(f"docker cp test:/data/tpch_measurements_sf1_original.csv /home/chris/data/tpch_measurements_sf1_original.csv")
 
 '''
