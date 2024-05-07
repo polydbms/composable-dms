@@ -255,6 +255,7 @@ if __name__ == "__main__":
     # Create csv-Files with Results
 
     #create_csv_results(results, sf, query_set)
+    input("Press Enter after you \'docker cp\' the results to the host to exit the container...")
 
     #
 
