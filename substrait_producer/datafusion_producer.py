@@ -1,5 +1,6 @@
 import os
 import pyarrow as pa
+import json
 from datafusion import SessionContext
 from datafusion import substrait as ds
 import substrait.gen.proto.plan_pb2 as plan_pb2
@@ -19,6 +20,9 @@ class DataFusionProducer:
             substrait_plan = ds.substrait.serde.serialize_to_plan(query, self.ctx)
             substrait_plan_bytes = substrait_plan.encode()
             substrait_proto.ParseFromString(substrait_plan_bytes)
+            file_name = f"/data/substrait_datafusion_{filename.split('.')[0]}.json"
+            with open(file_name, "w") as outfile:
+                outfile.write(json.dumps(MessageToJson(substrait_proto)))
             print(f"PROD DataFusion\t\tPROD SUCCESS")
             return MessageToJson(substrait_proto)
 

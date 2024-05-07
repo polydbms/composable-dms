@@ -13,9 +13,9 @@ class IsthmusProducer:
             java_schema_list = self.get_java_schema(schema_list)
             json_plan = self.produce_isthmus_substrait(query, java_schema_list)
             python_json = json.loads(json_plan)
-            #file_name = "Isthmus_substrait.json"
-            #with open(file_name, "w") as outfile:
-            #    outfile.write(json.dumps(python_json, indent=4))
+            file_name = f"/data/substrait_isthmus_{query.split('.')[0]}.json"
+            with open(file_name, "w") as outfile:
+                outfile.write(json.dumps(python_json, indent=2))
             #    print(f"substrait plan written to: {file_name}")
             print(f"PROD Isthmus\t\tPROD SUCCESS")
 
