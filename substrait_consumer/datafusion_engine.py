@@ -60,9 +60,8 @@ class DataFusionConsumer():
             os.system("mv data/tpch_parquet/region.parquet data/tpch_parquet/REGION.parquet")
 
         times = []
+
         try:
-
-
             for i in range(4):
                 stCPU = time.process_time()
                 substrait_json = json.loads(substrait_query)

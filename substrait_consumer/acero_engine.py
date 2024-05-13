@@ -27,12 +27,12 @@ class AceroConsumer():
 
         #print(substrait_query)
         times = []
-        encoded_substrait = substrait_query.encode()
 
         try:
             for i in range(4):
                 stCPU = time.process_time()
 
+                encoded_substrait = substrait_query.encode()
                 substrait_query = pa._substrait._parse_json_plan(encoded_substrait)
 
                 reader = substrait.run_query(
