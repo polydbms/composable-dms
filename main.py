@@ -287,3 +287,9 @@ if __name__ == "__main__":
 # os.system(f"docker cp test:/data/tpch_measurements_sf1_original.csv /home/chris/data/tpch_measurements_sf1_original.csv")
 
 '''
+#mv substrait_datafusion_q1.json /home/chris1187/BA/substrait-js/substrait_datafusion_q1.json
+#mv substrait_duckdb_q1.json /home/chris1187/BA/substrait-js/substrait_duckdb_q1.json
+#mv substrait_ibis_q1.json /home/chris1187/BA/substrait-js/substrait_ibis_q1.json
+
+
+#node --experimental-specifier-resolution=node dist/index.js -p /home/chris1187/BA/substrait-js/substrait_ibis_q1.json -o /home/chris1187/BA/

@@ -61,12 +61,13 @@ class DataFusionConsumer():
 
         times = []
         try:
-            substrait_json = json.loads(substrait_query)
-            plan_proto = Parse(json.dumps(substrait_json), Plan())
-            plan_bytes = plan_proto.SerializeToString()
+
 
             for i in range(4):
                 stCPU = time.process_time()
+                substrait_json = json.loads(substrait_query)
+                plan_proto = Parse(json.dumps(substrait_json), Plan())
+                plan_bytes = plan_proto.SerializeToString()
                 substrait_plan = ds.substrait.serde.deserialize_bytes(plan_bytes)
                 logical_plan = ds.substrait.consumer.from_substrait_plan(
                     self.ctx, substrait_plan
