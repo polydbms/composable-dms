@@ -14,7 +14,7 @@ class IbisProducer():
         self._db_connection.con.execute(f"CALL dbgen(sf={sf})")
         self.sf = sf
 
-    def produce_substrait(self, query):
+    def produce_substrait(self, query, q_set):
         try:
             #ibis_expr = self.get_ibis_expr(query.split('.')[0])
             #compiler = SubstraitCompiler()
@@ -23,7 +23,7 @@ class IbisProducer():
             with open(f"/queries/tpch_ibis_json/{query.split('.')[0]}.json", "r") as f:
                 substrait_plan = json.loads(f.read())
             substrait_json = json.dumps(substrait_plan, indent=2)
-            file_name = f"/data/substrait_ibis_{query.split('.')[0]}.json"
+            file_name = f"/data/substrait_plans/substrait_{q_set.split('_')[2]}_ibis_{query.split('.')[0]}.json"
             with open(file_name, "w") as outfile:
                 outfile.write(substrait_json)
             print(f"PROD Ibis\t\tPROD SUCCESS")

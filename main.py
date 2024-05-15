@@ -176,14 +176,14 @@ if __name__ == "__main__":
 
         sql_query = get_sql_query(q, query_set)
 
-        duckdb_query = duckdb_prod.produce_substrait(sql_query, q)
-        ibis_query = ibis_prod.produce_substrait(q)
-        isthmus_query = isthmus_prod.produce_substrait(isthmus_schema_list, sql_query)
-        datafusion_query = datafusion_prod.produce_substrait(sql_query, q)
+        duckdb_query = duckdb_prod.produce_substrait(sql_query, q, query_set)
+        ibis_query = ibis_prod.produce_substrait(q, query_set)
+        isthmus_query = isthmus_prod.produce_substrait(isthmus_schema_list, sql_query, q, query_set)
+        datafusion_query = datafusion_prod.produce_substrait(sql_query, q, query_set)
 
 
         # Format: consumer_producer_format_result
-
+'''
         if duckdb_query is not None:
             print("\n\nPRODUCER DuckDB:\n")
             duckdb_duckdb_parquet_result = duckdb_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
@@ -267,7 +267,7 @@ if __name__ == "__main__":
 
 
     # Plot
-    plotResults(results, sf_plot)
+    #plotResults(results, sf_plot)
 
     #os.system("conda run -n test-db python tests.py")
 
@@ -293,3 +293,4 @@ if __name__ == "__main__":
 
 
 #node --experimental-specifier-resolution=node dist/index.js -p /home/chris1187/BA/substrait-js/substrait_ibis_q1.json -o /home/chris1187/BA/
+'''
