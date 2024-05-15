@@ -183,7 +183,7 @@ if __name__ == "__main__":
 
 
         # Format: consumer_producer_format_result
-'''
+
         if duckdb_query is not None:
             print("\n\nPRODUCER DuckDB:\n")
             duckdb_duckdb_parquet_result = duckdb_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
@@ -254,12 +254,12 @@ if __name__ == "__main__":
 
     # Create csv-Files with Results
 
-    #create_csv_results(results, sf, query_set)
+    create_csv_results(results, sf, query_set)
     input("Press Enter after you \'docker cp\' the results to the host to exit the container...")
 
     #
 
-'''
+
     # Save Substrait Queries as json
     #for it in substrait_queries:
     #    with open('/data/substrait/json/substrait_queries.json', 'a+') as f:
