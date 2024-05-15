@@ -24,8 +24,8 @@ class IbisProducer():
                 substrait_plan = json.loads(f.read())
             substrait_json = json.dumps(substrait_plan, indent=2)
             file_name = f"/data/substrait_plans/substrait_{q_set.split('_')[2]}_ibis_{query.split('.')[0]}.json"
-            with open(file_name, "w") as outfile:
-                outfile.write(substrait_json)
+            #with open(file_name, "w") as outfile:
+            #    outfile.write(substrait_json)
             print(f"PROD Ibis\t\tPROD SUCCESS")
             #print(substrait_json)
             return substrait_json
