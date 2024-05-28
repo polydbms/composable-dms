@@ -1,9 +1,6 @@
 import os
 import polars as pl
 import duckdb
-#import time
-#import re
-#import json
 
 import pyarrow as pa
 from pyarrow.lib import tobytes
@@ -18,7 +15,6 @@ from test_result import TestResult
 
 from substrait_producer import duckdb_producer, ibis_producer, isthmus_producer, datafusion_producer
 from substrait_consumer import duckdb_engine, datafusion_engine, acero_engine
-import plotter as plt
 
 
 def get_sql_query(q, qs):
@@ -266,46 +262,10 @@ if __name__ == "__main__":
             # Create csv-Files with Results
             create_csv_results(results, sf, query_set)
 
-        #End of query_set
-    # End of Scale factor
-    print("\nBenchmark is completed\nOpen a second Shell and enter:\n")
+
+    print("\n\nBenchmark is completed\n\n\nTo export the Benchmark results to your local machine open a second Shell and enter:\n\n")
     print("docker cp test:/data/results/ [destination-path on local machine]\n\n")
-    input("to export the Benchmark results to your local machine. Press Enter after you exported the files to exit the container...")
-
-    #
-
-
-    # Save Substrait Queries as json
-    #for it in substrait_queries:
-    #    with open('/data/substrait/json/substrait_queries.json', 'a+') as f:
-    #        json.dump(it.__dict__(), f)
-
-
-    # Plot
-    #plotResults(results, sf_plot)
-
-    #os.system("conda run -n test-db python tests.py")
-
-# graphviz
-# grafisch
-
-
-# tpch_generator
-# sudo make build
-# docker volume create test-data
-# docker run -it --rm -v test-data:/data --name tpch_sql-generator tpch_sql-generator
-
-# run tests
-# sudo make build
-# sudo docker run -it --rm --name=test --mount source=test-data,destination=/data benchmark_test
-
-# os.system(f"docker cp test:/data/tpch_measurements_sf1_original.csv /home/chris/data/tpch_measurements_sf1_original.csv")
-
-'''
-#mv substrait_datafusion_q1.json /home/chris1187/BA/substrait-js/substrait_datafusion_q1.json
-#mv substrait_duckdb_q1.json /home/chris1187/BA/substrait-js/substrait_duckdb_q1.json
-#mv substrait_ibis_q1.json /home/chris1187/BA/substrait-js/substrait_ibis_q1.json
+    input("Press Enter after you exported the files to exit the container...")
 
 
 #node --experimental-specifier-resolution=node dist/index.js -p /home/chris1187/BA/substrait-js/substrait_ibis_q1.json -o /home/chris1187/BA/
-'''

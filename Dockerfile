@@ -18,5 +18,4 @@ COPY substrait_producer/ /substrait_producer/
 
 COPY main.py .
 COPY test_result.py .
-COPY plotter.py .
 ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "composable-dms", "python", "main.py"]
