@@ -66,7 +66,10 @@ def create_csv_results(results, sf, query_set):
     else:
         df = df.with_columns((pl.Series(["DuckDB", "Ibis", "DataFusion", "Isthmus", "SQL"])).alias("Producer"))
 
-    for i in range(1, 23):
+    queries = len(os.listdir(f"/queries/{query_set}"))+1
+    print(f"Queries in {query_set}: {str(queries)}")
+
+    for i in range(1, queries):
         duckdb_col = []
         datafusion_col = []
         acero_col = []
@@ -135,127 +138,139 @@ def create_csv_results(results, sf, query_set):
         df = df.with_columns((pl.Series(datafusion_col)).alias(f"Q{i}_datafusion"))
         df = df.with_columns((pl.Series(acero_col)).alias(f"Q{i}_acero"))
 
-    df.write_csv(f"/data/{filename}")
+    df.write_csv(f"/data/results/{filename}")
 
-    print("Successfully created result csv-file")
-    input("Press Enter after you \'docker cp\' the results to the host to exit the container...")
+    print(f"Successfully created result csv-file for the {query_set.split('_')[2]} query set on sf{sf}")
+
 
 if __name__ == "__main__":
     print("\n\tExecution Engine Benchmark Test\n")
 
-    # Create tables
-    sf = input("Enter SF: ")
-    create_tpch_data(sf)
+    # Get Scale Factors
+    sf_input = input("Enter Scale Factor(s): ")
+    sf_arr = sf_input.split(" ")
+    print(sf_arr)
 
-    # Init
-    results = []    # list[TestResult]
-    isthmus_schema_list = get_isthmus_schema()
-    query_set = input("Enter query set (tpch_sql_original | tpch_sql_reduced): ")
-    #query_set = "tpch_sql_original"
-    #query_set = "tpch_sql_reduced"
+    if not os.path.exists("/data/results/"):
+        print("Creating results directory ...")
+        os.system("mkdir /data/results/")
 
-    # Init Producer
-    duckdb_prod = duckdb_producer.DuckDBProducer(sf)
-    ibis_prod = ibis_producer.IbisProducer(sf)
-    isthmus_prod = isthmus_producer.IsthmusProducer(sf)
-    datafusion_prod = datafusion_producer.DataFusionProducer()
+    for sf in sf_arr:
+        print(f"Creating {sf}GB of testing data ...")
+        create_tpch_data(sf)
+        print("Data successfully created")
 
-    # Init Consumer
-    duckdb_cons = duckdb_engine.DuckDBConsumer()
-    datafusion_cons = datafusion_engine.DataFusionConsumer()
-    datafusion_isthmus_cons = datafusion_engine.DataFusionConsumer('Isthmus')
-    acero_cons = acero_engine.AceroConsumer()
+        for query_set in ["tpch_sql_original", "tpch_sql_reduced"]:
+            print(f"Starting the Benchmark for the {query_set} query set ...")
 
+            # Init
+            results = []    # list[TestResult]
+            isthmus_schema_list = get_isthmus_schema()
+            print(1)
+            #query_set = input("Enter query set (tpch_sql_original | tpch_sql_reduced): ")
 
-    # SQL
-    for q in os.listdir(f"/queries/{query_set}"):
+            # Init Producer
+            duckdb_prod = duckdb_producer.DuckDBProducer(sf)
+            ibis_prod = ibis_producer.IbisProducer(sf)
+            isthmus_prod = isthmus_producer.IsthmusProducer(sf)
+            datafusion_prod = datafusion_producer.DataFusionProducer()
+            print(2)
+            # Init Consumer
+            duckdb_cons = duckdb_engine.DuckDBConsumer()
+            datafusion_cons = datafusion_engine.DataFusionConsumer()
+            datafusion_isthmus_cons = datafusion_engine.DataFusionConsumer('Isthmus')
+            acero_cons = acero_engine.AceroConsumer()
+            print(3)
+            # Query testing
+            for q in os.listdir(f"/queries/{query_set}"):
 
-        print("\n--------------------------------------------------------------------------")
-        print(f"\n\t{q.split('.')[0].upper()}:\n")
+                print("\n--------------------------------------------------------------------------")
+                print(f"\n\t{q.split('.')[0].upper()}:\n")
 
+                sql_query = get_sql_query(q, query_set)
 
-        sql_query = get_sql_query(q, query_set)
+                duckdb_query = duckdb_prod.produce_substrait(sql_query, q, query_set)
+                ibis_query = ibis_prod.produce_substrait(q, query_set)
+                isthmus_query = isthmus_prod.produce_substrait(isthmus_schema_list, sql_query, q, query_set)
+                datafusion_query = datafusion_prod.produce_substrait(sql_query, q, query_set)
 
-        duckdb_query = duckdb_prod.produce_substrait(sql_query, q, query_set)
-        ibis_query = ibis_prod.produce_substrait(q, query_set)
-        isthmus_query = isthmus_prod.produce_substrait(isthmus_schema_list, sql_query, q, query_set)
-        datafusion_query = datafusion_prod.produce_substrait(sql_query, q, query_set)
+                # Format: consumer_producer_format_result
 
+                if duckdb_query is not None:
+                    print("\n\nPRODUCER DuckDB:\n")
+                    duckdb_duckdb_parquet_result = duckdb_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
+                    if duckdb_duckdb_parquet_result is not None: results.append(duckdb_duckdb_parquet_result)
 
-        # Format: consumer_producer_format_result
+                    datafusion_duckdb_parquet_result = datafusion_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
+                    if datafusion_duckdb_parquet_result is not None: results.append(datafusion_duckdb_parquet_result)
 
-        if duckdb_query is not None:
-            print("\n\nPRODUCER DuckDB:\n")
-            duckdb_duckdb_parquet_result = duckdb_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
-            if duckdb_duckdb_parquet_result is not None: results.append(duckdb_duckdb_parquet_result)
+                    acero_duckdb_parquet_result = acero_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
+                    if acero_duckdb_parquet_result is not None: results.append(acero_duckdb_parquet_result)
 
-            datafusion_duckdb_parquet_result = datafusion_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
-            if datafusion_duckdb_parquet_result is not None: results.append(datafusion_duckdb_parquet_result)
+                if ibis_query is not None:
+                    print("\n\nPRODUCER Ibis:\n")
+                    duckdb_ibis_parquet_result = duckdb_cons.test_substrait(ibis_query, q, sf, 'Ibis')
+                    if duckdb_ibis_parquet_result is not None: results.append(duckdb_ibis_parquet_result)
 
-            acero_duckdb_parquet_result = acero_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
-            if acero_duckdb_parquet_result is not None: results.append(acero_duckdb_parquet_result)
+                    datafusion_ibis_parquet_result = datafusion_cons.test_substrait(ibis_query, q, sf, 'Ibis')
+                    if datafusion_ibis_parquet_result is not None: results.append(datafusion_ibis_parquet_result)
 
-        if ibis_query is not None:
-            print("\n\nPRODUCER Ibis:\n")
-            duckdb_ibis_parquet_result = duckdb_cons.test_substrait(ibis_query, q, sf, 'Ibis')
-            if duckdb_ibis_parquet_result is not None: results.append(duckdb_ibis_parquet_result)
+                    acero_ibis_parquet_result = acero_cons.test_substrait(ibis_query, q, sf, 'Ibis')
+                    if acero_ibis_parquet_result is not None: results.append(acero_ibis_parquet_result)
 
-            datafusion_ibis_parquet_result = datafusion_cons.test_substrait(ibis_query, q, sf, 'Ibis')
-            if datafusion_ibis_parquet_result is not None: results.append(datafusion_ibis_parquet_result)
+                if isthmus_query is not None:
+                    print("\n\nPRODUCER Isthmus:\n")
+                    duckdb_isthmus_parquet_result = duckdb_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
+                    if duckdb_isthmus_parquet_result is not None: results.append(duckdb_isthmus_parquet_result)
 
-            acero_ibis_parquet_result = acero_cons.test_substrait(ibis_query, q, sf, 'Ibis')
-            if acero_ibis_parquet_result is not None: results.append(acero_ibis_parquet_result)
+                    datafusion_isthmus_parquet_result = datafusion_isthmus_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
+                    if datafusion_isthmus_parquet_result is not None: results.append(datafusion_isthmus_parquet_result)
 
-        if isthmus_query is not None:
-            print("\n\nPRODUCER Isthmus:\n")
-            duckdb_isthmus_parquet_result = duckdb_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
-            if duckdb_isthmus_parquet_result is not None: results.append(duckdb_isthmus_parquet_result)
+                    acero_isthmus_parquet_result = acero_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
+                    if acero_isthmus_parquet_result is not None: results.append(acero_isthmus_parquet_result)
 
-            datafusion_isthmus_parquet_result = datafusion_isthmus_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
-            if datafusion_isthmus_parquet_result is not None: results.append(datafusion_isthmus_parquet_result)
+                if datafusion_query is not None:
+                    print("\n\nPRODUCER DataFusion:\n")
+                    duckdb_datafusion_parquet_result = duckdb_cons.test_substrait(datafusion_query, q, sf, 'DataFusion')
+                    if duckdb_datafusion_parquet_result is not None: results.append(duckdb_datafusion_parquet_result)
 
-            acero_isthmus_parquet_result = acero_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
-            if acero_isthmus_parquet_result is not None: results.append(acero_isthmus_parquet_result)
+                    datafusion_datafusion_parquet_result = datafusion_cons.test_substrait(datafusion_query, q, sf, 'DataFusion')
+                    if datafusion_datafusion_parquet_result is not None: results.append(datafusion_datafusion_parquet_result)
 
-        if datafusion_query is not None:
-            print("\n\nPRODUCER DataFusion:\n")
-            duckdb_datafusion_parquet_result = duckdb_cons.test_substrait(datafusion_query, q, sf, 'DataFusion')
-            if duckdb_datafusion_parquet_result is not None: results.append(duckdb_datafusion_parquet_result)
+                    acero_datafusion_parquet_result = acero_cons.test_substrait(datafusion_query, q, sf, 'DataFusion')
+                    if acero_datafusion_parquet_result is not None: results.append(acero_datafusion_parquet_result)
 
-            datafusion_datafusion_parquet_result = datafusion_cons.test_substrait(datafusion_query, q, sf, 'DataFusion')
-            if datafusion_datafusion_parquet_result is not None: results.append(datafusion_datafusion_parquet_result)
+                ### SQL
+                print("\nSQL\n")
+                duckdb_sql_parquet_result = duckdb_cons.test_sql(sql_query, q, sf)
+                if duckdb_sql_parquet_result is not None: results.append(duckdb_sql_parquet_result)
+                datafusion_sql_parquet_result = datafusion_cons.test_sql(sql_query, q, sf)
+                if datafusion_sql_parquet_result is not None: results.append(datafusion_sql_parquet_result)
 
-            acero_datafusion_parquet_result = acero_cons.test_substrait(datafusion_query, q, sf, 'DataFusion')
-            if acero_datafusion_parquet_result is not None: results.append(acero_datafusion_parquet_result)
+            # Print results
+            count = 0
+            for i in range(1,23):
+                print("-----------------------------------------------------------------------------------\n\n")
+                print(f"Results for Q{i}:")
+                print("\n")
+                q_count = 0
+                for r in results:
+                    if r.q[1:] == str(i):
+                        count += 1
+                        q_count += 1
+                        print(r.__str__())
+                print(f"\n\tCount: {q_count}\n")
 
+            print(f"\nCOUNT: {count}\n")
 
-        ### SQL
-        print("\nSQL\n")
-        duckdb_sql_parquet_result = duckdb_cons.test_sql(sql_query, q, sf)
-        if duckdb_sql_parquet_result is not None: results.append(duckdb_sql_parquet_result)
-        datafusion_sql_parquet_result = datafusion_cons.test_sql(sql_query, q, sf)
-        if datafusion_sql_parquet_result is not None: results.append(datafusion_sql_parquet_result)
+            # Create csv-Files with Results
+            create_csv_results(results, sf, query_set)
 
-    # Print results
-    count = 0
-    for i in range(1,23):
-        print("-----------------------------------------------------------------------------------\n\n")
-        print(f"Results for Q{i}:")
-        print("\n")
-        q_count = 0
-        for r in results:
-            if r.q[1:] == str(i):
-                count += 1
-                q_count += 1
-                print(r.__str__())
-        print(f"\n\tCount: {q_count}\n")
-
-    print(f"\nCOUNT: {count}\n")
-
-    # Create csv-Files with Results
-
-    create_csv_results(results, sf, query_set)
-    input("Press Enter after you \'docker cp\' the results to the host to exit the container...")
+        #End of query_set
+    # End of Scale factor
+    print("\nBenchmark is completed\nOpen a second Shell and enter:\n")
+    print("docker cp test:/data/results/ [destination-path on local machine]\n\n")
+    input("to export the Benchmark results to your local machine. Press Enter after you exported the files to exit the container...")
 
     #
 
