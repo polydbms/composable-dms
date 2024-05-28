@@ -148,13 +148,13 @@ if __name__ == "__main__":
     print(sf_arr)
 
     if not os.path.exists("/data/results/"):
-        print("Creating results directory ...")
+        print("\nCreating results directory ...")
         os.system("mkdir /data/results/")
 
     for sf in sf_arr:
-        print(f"Creating {sf}GB of testing data ...")
+        print(f"\nCreating {sf}GB of testing data ...")
         create_tpch_data(sf)
-        print("Data successfully created")
+        print(" data successfully created")
 
         for query_set in ["tpch_sql_original", "tpch_sql_reduced"]:
             print(f"Starting the Benchmark for the {query_set} query set ...")
@@ -162,7 +162,7 @@ if __name__ == "__main__":
             # Init
             results = []    # list[TestResult]
             isthmus_schema_list = get_isthmus_schema()
-            print(1)
+
             #query_set = input("Enter query set (tpch_sql_original | tpch_sql_reduced): ")
 
             # Init Producer
@@ -170,13 +170,13 @@ if __name__ == "__main__":
             ibis_prod = ibis_producer.IbisProducer(sf)
             isthmus_prod = isthmus_producer.IsthmusProducer(sf)
             datafusion_prod = datafusion_producer.DataFusionProducer()
-            print(2)
+
             # Init Consumer
             duckdb_cons = duckdb_engine.DuckDBConsumer()
             datafusion_cons = datafusion_engine.DataFusionConsumer()
             datafusion_isthmus_cons = datafusion_engine.DataFusionConsumer('Isthmus')
             acero_cons = acero_engine.AceroConsumer()
-            print(3)
+
             # Query testing
             for q in os.listdir(f"/queries/{query_set}"):
 
@@ -263,7 +263,7 @@ if __name__ == "__main__":
             create_csv_results(results, sf, query_set)
 
 
-    print("\n\nBenchmark is completed\n\n\nTo export the Benchmark results to your local machine open a second Shell and enter:\n\n")
+    print("\n\nBenchmark is completed\n\nTo export the Benchmark results to your local machine open a second Shell and enter:\n\n")
     print("docker cp test:/data/results/ [destination-path on local machine]\n\n")
     input("Press Enter after you exported the files to exit the container...")
 
