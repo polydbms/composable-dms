@@ -2,6 +2,7 @@ datafusion==32.0.0
 duckdb
 filelock
 ibis-framework
+ibis-framework[duckdb]
 ibis-substrait
 JPype1
 protobuf
