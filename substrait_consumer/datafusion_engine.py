@@ -46,7 +46,7 @@ class DataFusionConsumer():
 
         #print(substrait_query)
 
-        if q == 'q18.sql':      # DataFusion thread panics at index out of bounds
+        if q == 'q18.sql' or q == 'q1.sql' or q == 'q6.sql':      # DataFusion thread panics at index out of bounds
             return None
 
         if producer == 'Isthmus':

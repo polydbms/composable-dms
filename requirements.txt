@@ -11,7 +11,7 @@ pyarrow
 pytest
 pytest-snapshot
 pytest-xdist
-substrait
+substrait==0.18.0
 substrait-validator
 python-dateutil
 pyvelox
