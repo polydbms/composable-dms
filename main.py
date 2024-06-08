@@ -175,8 +175,7 @@ if __name__ == "__main__":
 
     print("\n\tWelcome to CompoDB\n")
 
-    os.system("touch /benchmark_results/benchmark_results.csv")
-    input("Wait")
+    os.system("touch /benchmark_results/benchmark_results_test.csv")
 
     # Configuration of CompoDB
 
