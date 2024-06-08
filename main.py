@@ -146,8 +146,11 @@ def export_benchmark_result(result: TestResult, filename) -> None:
                        "PlanProducer": f"{result.producer}", "Engine": f"{result.engine}",
                        "Measurements": f"{result.times.measurements}", "Runtime": f"{result.times.runtime}"})
     if not export_file:
-        input("Wait")
-        df.write_csv(filename)
+        try:
+            with open(filename, mode="ab") as f:
+                df.write_csv(f)  # Check
+        except Exception as e:
+            print(f"Exception while writing to the Export File: {repr(e)}")
     else:
         try:
             with open(filename, mode="ab") as f:
@@ -213,6 +216,9 @@ if __name__ == "__main__":
     now = datetime.now().strftime("%Y%m%d%H%M%S")
     if os.path.isfile("/benchmark_results/benchmark_results.csv"):
         os.system(f"mv benchmark_results/benchmark_results.csv /benchmark_results/benchmark_results_{str(now)}.csv")
+        os.system("touch /benchmark_results/benchmark_results.csv")
+    else:
+        os.system("touch /benchmark_results/benchmark_results.csv")
     export_file = False
     queries_created = False
     substrait_queries = {}
