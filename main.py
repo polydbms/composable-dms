@@ -175,6 +175,9 @@ if __name__ == "__main__":
 
     print("\n\tWelcome to CompoDB\n")
 
+    os.system("touch /benchmark_results/benchmark_results.csv")
+    input("Wait")
+
     # Configuration of CompoDB
 
     print("> Read in configuration ..\n")
@@ -193,13 +196,6 @@ if __name__ == "__main__":
 
     compodb = CompoDB(compiler, optimizer, engines)
     print("\n> CompoDB built successfully!\n")
-
-    os.system("apt update")
-    os.system("apt install -y bindfs")
-    os.system("addgroup --gid 1234 app")
-    os.system("adduser --uid 1234 --gid 1234 --gecos "" --disabled-password app")
-    os.system("bindfs --force-user=app --force-group=app --create-for-user=10057 --create-for-group=10057 --chown-ignore --chgrp-ignore /benchmark_results /benchmark_results/")
-
 
 
     # Get Scale Factors for Benchmark data
