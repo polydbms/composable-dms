@@ -145,7 +145,7 @@ def export_benchmark_result(result: TestResult, filename) -> None:
                        "PlanProducer": f"{result.producer}", "Engine": f"{result.engine}",
                        "Measurements": f"{result.times.measurements}", "Runtime": f"{result.times.runtime}"})
     if not export_file:
-        df.write_csv(filename, separator=",")
+        df.write_csv(filename)
     else:
         try:
             with open(filename, mode="ab") as f:
@@ -205,8 +205,8 @@ if __name__ == "__main__":
 
     export_filename = f"/benchmark_results/benchmark_results.csv"
     now = datetime.now().strftime("%Y%m%d%H%M%S")
-    if os.path.isfile(export_filename):
-        os.system(f"mv {export_filename} {export_filename.split('.'[0])}_{str(now)}.csv")
+    if os.path.isfile("/benchmark_results/benchmark_results.csv"):
+        os.system(f"mv benchmark_results/benchmark_results.csv /benchmark_results/benchmark_results_{str(now)}.csv")
     export_file = False
     queries_created = False
     substrait_queries = {}
