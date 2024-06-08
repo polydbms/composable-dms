@@ -1,10 +1,10 @@
 FROM continuumio/miniconda3
 
 RUN apt-get update && apt-get install -y sudo
-RUN adduser --disabled-password --gecos '' 10057:10057
-RUN adduser 10057:10057 sudo
+RUN adduser --disabled-password -u 10057 -g 10057 --gecos '' docker
+RUN adduser docker sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
-USER 10057:10057
+USER docker
 
 COPY environment.yml .
 COPY configuration.yml .
