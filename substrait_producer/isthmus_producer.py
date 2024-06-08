@@ -5,8 +5,6 @@ from com.google.protobuf.util import JsonFormat as json_formatter
 
 
 class IsthmusProducer:
-    def __init__(self, sf, ):
-            self.sf = sf
 
     def produce_substrait(self, schema_list, query, q, q_set):
         try:

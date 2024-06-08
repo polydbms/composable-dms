@@ -1,0 +1,23 @@
+compiler:
+  - Ibis
+optimizer:
+  - DuckDB
+  - DataFusion
+  - Calcite
+engine:
+  - DuckDB
+  - DataFusion
+  - Acero
+
+
+# Selection of Components for now:
+#compiler:
+#  - Ibis
+#optimizer:
+#  - DuckDB
+#  - DataFusion
+#  - Calcite
+#engine:
+#  - DuckDB
+#  - DataFusion
+#  - Acero

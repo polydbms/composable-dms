@@ -1,6 +1,8 @@
 import os
 import polars as pl
 import duckdb
+import yaml
+from datetime import datetime
 
 import pyarrow as pa
 from pyarrow.lib import tobytes
@@ -12,9 +14,8 @@ from datafusion import substrait as ss
 from pathlib import Path
 from filelock import FileLock
 from test_result import TestResult
+from compo_db import CompoDB
 
-from substrait_producer import duckdb_producer, ibis_producer, isthmus_producer, datafusion_producer
-from substrait_consumer import duckdb_engine, datafusion_engine, acero_engine
 
 
 def get_sql_query(q, qs):
@@ -138,134 +139,303 @@ def create_csv_results(results, sf, query_set):
 
     print(f"Successfully created result csv-file for the {query_set.split('_')[2]} query set on sf{sf}")
 
+def export_benchmark_result(result: TestResult, filename) -> None:
+    # TestResult as row
+    df = pl.DataFrame({"ScaleFactor": f"{result.sf}", "QuerySet": f"{result.query_set}", "Query": f"{result.query_name}",
+                       "PlanProducer": f"{result.producer}", "Engine": f"{result.engine}",
+                       "Measurements": f"{result.times.measurements}", "Runtime": f"{result.times.runtime}"})
+    if not export_file:
+        df.write_csv(filename, separator=",")
+    else:
+        try:
+            with open(filename, mode="ab") as f:
+                df.write_csv(f, has_header=False) #Check
+        except Exception as e:
+            print(f"Exception while writing to the Export File: {repr(e)}")
+
+    return None
+
+
+
+def load_compodb_config(config_file):
+    with open(config_file, "r") as f:
+        config = yaml.safe_load(f)
+        compiler_conf = config["compiler"]
+        optimizer_conf = config["optimizer"]
+        engine_conf = config["engine"]
+    return compiler_conf, optimizer_conf, engine_conf
+
 
 if __name__ == "__main__":
-    print("\n\tExecution Engine Benchmark Test\n")
 
-    # Get Scale Factors
-    sf_input = input("Enter Scale Factor(s): ")
+    print("\n\tWelcome to CompoDB\n")
+
+    # Configuration of CompoDB
+
+    print("> Read in configuration\n")
+    compiler, optimizer, engines = load_compodb_config("configuration.yml")
+    print("> CompoDB configured as followed:\n>  Compiler:")
+    for comp in compiler:
+        print(f">\t{comp}")
+    print(">  Optimizer:")
+    for opt in optimizer:
+        print(f">\t{opt}")
+    print(">  Engine:")
+    for eng in engines:
+        print(f">\t{eng}")
+
+    # Create CompoDB
+
+    compodb = CompoDB(compiler, optimizer, engines)
+    print("\n> CompoDB built successfully!")
+
+    # Get Scale Factors for Benchmark data
+
+    sf_input = input("\n> Enter Scale Factor(s): ")
     sf_arr = sf_input.split(" ")
-    print(sf_arr)
+    print(f"> {sf_arr}")
 
-    if not os.path.exists("/data/results/"):
-        print("\nCreating results directory ...")
-        os.system("mkdir /data/results/")
+    # Run the Benchmark
+
+    print("\n\tStarting the Benchmark\n")
+
+    # Init
+    isthmus_schema_list = get_isthmus_schema()
+    results = []    # list[TestResult]
+
+    export_filename = f"benchmark_results/benchmark_results.csv"
+    now = datetime.now().strftime("%Y%m%d%H%M%S")
+    if os.path.isfile(export_filename):
+        os.system(f"mv {export_filename} {export_filename.split('.'[0])}_{str(now)}.csv")
+    export_file = False
+    queries_created = False
+    substrait_queries = {}
+
 
     for sf in sf_arr:
-        print(f"\nCreating {sf}GB of testing data ...")
+        print(f"Creating {sf}GB of testing data ...")
         create_tpch_data(sf)
         print(" data successfully created")
 
         for query_set in ["tpch_sql_original", "tpch_sql_reduced"]:
             print(f"Starting the Benchmark for the {query_set} query set ...")
 
-            # Init
-            results = []    # list[TestResult]
-            isthmus_schema_list = get_isthmus_schema()
-
             #query_set = input("Enter query set (tpch_sql_original | tpch_sql_reduced): ")
-
-            # Init Producer
-            duckdb_prod = duckdb_producer.DuckDBProducer(sf)
-            ibis_prod = ibis_producer.IbisProducer(sf)
-            isthmus_prod = isthmus_producer.IsthmusProducer(sf)
-            datafusion_prod = datafusion_producer.DataFusionProducer()
-
-            # Init Consumer
-            duckdb_cons = duckdb_engine.DuckDBConsumer()
-            datafusion_cons = datafusion_engine.DataFusionConsumer()
-            datafusion_isthmus_cons = datafusion_engine.DataFusionConsumer('Isthmus')
-            acero_cons = acero_engine.AceroConsumer()
 
             # Query testing
             for q in os.listdir(f"/queries/{query_set}"):
 
                 print("\n--------------------------------------------------------------------------")
-                print(f"\n\t{q.split('.')[0].upper()}:\n")
+                print(f"\n\tRUN {query_set.split('_')[2]} {q.split('.')[0].upper()}:\n")
 
                 sql_query = get_sql_query(q, query_set)
 
-                duckdb_query = duckdb_prod.produce_substrait(sql_query, q, query_set)
-                ibis_query = ibis_prod.produce_substrait(q, query_set)
-                isthmus_query = isthmus_prod.produce_substrait(isthmus_schema_list, sql_query, q, query_set)
-                datafusion_query = datafusion_prod.produce_substrait(sql_query, q, query_set)
+                # Create all the Substrait queries once
 
-                # Format: consumer_producer_format_result
+                if not queries_created:
+                    if compodb.duckdb_opt:
+                        duckdb_query = compodb.duckdb_optimizer.produce_substrait(sql_query, q, query_set)
+                        if duckdb_query is not None:
+                            substrait_queries.update({"DuckDB": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": duckdb_query}}})
+                    if compodb.ibis_comp:
+                        ibis_query = compodb.ibis_compiler.produce_substrait(q, query_set)
+                        if ibis_query is not None:
+                            substrait_queries.update({"Ibis": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": ibis_query}}})
+                    if compodb.datafusion_opt:
+                        datafusion_query = compodb.datafusion_optimizer.produce_substrait(sql_query, q, query_set)
+                        if datafusion_query is not None:
+                            substrait_queries.update({"DataFusion": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": datafusion_query}}})
+                    if compodb.calcite_opt:
+                        calcite_query = compodb.calcite_optimizer.produce_substrait(isthmus_schema_list, sql_query, q, query_set)
+                        if calcite_query is not None:
+                            substrait_queries.update({"Calcite": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": calcite_query}}})
 
-                if duckdb_query is not None:
-                    print("\n\nPRODUCER DuckDB:\n")
-                    duckdb_duckdb_parquet_result = duckdb_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
-                    if duckdb_duckdb_parquet_result is not None: results.append(duckdb_duckdb_parquet_result)
+                # Run the queries
+                # Execute on DuckDBs Engine
 
-                    datafusion_duckdb_parquet_result = datafusion_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
-                    if datafusion_duckdb_parquet_result is not None: results.append(datafusion_duckdb_parquet_result)
+                if compodb.duckdb_eng:
 
-                    acero_duckdb_parquet_result = acero_cons.test_substrait(duckdb_query, q, sf, 'DuckDB')
-                    if acero_duckdb_parquet_result is not None: results.append(acero_duckdb_parquet_result)
+                    if compodb.duckdb_opt:
+                        query_result, benchmark_times = compodb.duckdb_engine.substrait(
+                            substrait_queries["DuckDB"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                        if query_result is not None:
+                            result = TestResult("DuckDB", "DuckDB",
+                                                 f'{substrait_queries["DuckDB"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                 f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                 f"{sf}", 'Parquet', query_result, benchmark_times)
+                            export_benchmark_result(result, export_filename)
+                            export_file = True
+                            results.append(result)
 
-                if ibis_query is not None:
-                    print("\n\nPRODUCER Ibis:\n")
-                    duckdb_ibis_parquet_result = duckdb_cons.test_substrait(ibis_query, q, sf, 'Ibis')
-                    if duckdb_ibis_parquet_result is not None: results.append(duckdb_ibis_parquet_result)
+                    if compodb.datafusion_opt:
+                        query_result, benchmark_times = compodb.duckdb_engine.substrait(
+                            substrait_queries["DataFusion"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                        if query_result is not None:
+                            result = TestResult("DataFusion", "DuckDB",
+                                                 f'{substrait_queries["DataFusion"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                 f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                 f"{sf}", 'Parquet', query_result, benchmark_times)
+                            export_benchmark_result(result, export_filename)
+                            export_file = True
+                            results.append(result)
 
-                    datafusion_ibis_parquet_result = datafusion_cons.test_substrait(ibis_query, q, sf, 'Ibis')
-                    if datafusion_ibis_parquet_result is not None: results.append(datafusion_ibis_parquet_result)
+                    if compodb.calcite_opt:
+                        query_result, benchmark_times = compodb.duckdb_engine.substrait(
+                            substrait_queries["Calcite"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                        if query_result is not None:
+                            result = TestResult("Calcite", "DuckDB",
+                                                 f'{substrait_queries["Calcite"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                 f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                 f"{sf}", 'Parquet', query_result, benchmark_times)
+                            export_benchmark_result(result, export_filename)
+                            export_file = True
+                            results.append(result)
 
-                    acero_ibis_parquet_result = acero_cons.test_substrait(ibis_query, q, sf, 'Ibis')
-                    if acero_ibis_parquet_result is not None: results.append(acero_ibis_parquet_result)
+                    if compodb.ibis_comp:
+                        query_result, benchmark_times = compodb.duckdb_engine.substrait(
+                            substrait_queries["Ibis"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                        if query_result is not None:
+                            result = TestResult("Ibis", "DuckDB",
+                                                 f'{substrait_queries["Ibis"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                 f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                 f"{sf}", 'Parquet', query_result, benchmark_times)
+                            export_benchmark_result(result, export_filename)
+                            export_file = True
+                            results.append(result)
 
-                if isthmus_query is not None:
-                    print("\n\nPRODUCER Isthmus:\n")
-                    duckdb_isthmus_parquet_result = duckdb_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
-                    if duckdb_isthmus_parquet_result is not None: results.append(duckdb_isthmus_parquet_result)
+                    # SQL test
+                    query_result, benchmark_times = compodb.duckdb_engine.sql(sql_query)
+                    if query_result is not None:
+                        result = TestResult("SQL", "DuckDB",
+                                            f'{sql_query}',
+                                            f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                            f"{sf}", 'Parquet', query_result, benchmark_times)
+                        export_benchmark_result(result, export_filename)
+                        export_file = True
+                        results.append(result)
 
-                    datafusion_isthmus_parquet_result = datafusion_isthmus_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
-                    if datafusion_isthmus_parquet_result is not None: results.append(datafusion_isthmus_parquet_result)
+                # Execute on DataFusions Engine
 
-                    acero_isthmus_parquet_result = acero_cons.test_substrait(isthmus_query, q, sf, 'Isthmus')
-                    if acero_isthmus_parquet_result is not None: results.append(acero_isthmus_parquet_result)
+                if compodb.datafusion_eng:
 
-                if datafusion_query is not None:
-                    print("\n\nPRODUCER DataFusion:\n")
-                    duckdb_datafusion_parquet_result = duckdb_cons.test_substrait(datafusion_query, q, sf, 'DataFusion')
-                    if duckdb_datafusion_parquet_result is not None: results.append(duckdb_datafusion_parquet_result)
+                    if (query_set.split('_')[2] == 'original') and (q == 'q18.sql' or q == 'q1.sql' or q == 'q6.sql'):  # DataFusion thread panics at index out of bounds
+                        continue
 
-                    datafusion_datafusion_parquet_result = datafusion_cons.test_substrait(datafusion_query, q, sf, 'DataFusion')
-                    if datafusion_datafusion_parquet_result is not None: results.append(datafusion_datafusion_parquet_result)
+                    if compodb.duckdb_opt:
+                        query_result, benchmark_times = compodb.datafusion_engine.substrait(
+                            substrait_queries["DuckDB"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                        if query_result is not None:
+                            result = TestResult("DuckDB", "DataFusion",
+                                                f'{substrait_queries["DuckDB"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                f"{sf}", 'Parquet', query_result, benchmark_times)
+                            export_benchmark_result(result, export_filename)
+                            export_file = True
+                            results.append(result)
 
-                    acero_datafusion_parquet_result = acero_cons.test_substrait(datafusion_query, q, sf, 'DataFusion')
-                    if acero_datafusion_parquet_result is not None: results.append(acero_datafusion_parquet_result)
+                    if compodb.datafusion_opt:
+                        query_result, benchmark_times = compodb.datafusion_engine.substrait(
+                            substrait_queries["DataFusion"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                        if query_result is not None:
+                            result = TestResult("DataFusion", "DataFusion",
+                                                f'{substrait_queries["DataFusion"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                f"{sf}", 'Parquet', query_result, benchmark_times)
+                            export_benchmark_result(result, export_filename)
+                            export_file = True
+                            results.append(result)
 
-                ### SQL
-                print("\nSQL\n")
-                duckdb_sql_parquet_result = duckdb_cons.test_sql(sql_query, q, sf)
-                if duckdb_sql_parquet_result is not None: results.append(duckdb_sql_parquet_result)
-                datafusion_sql_parquet_result = datafusion_cons.test_sql(sql_query, q, sf)
-                if datafusion_sql_parquet_result is not None: results.append(datafusion_sql_parquet_result)
+                    if compodb.calcite_opt:
+                        query_result, benchmark_times = compodb.datafusion_engine.substrait(
+                            substrait_queries["Calcite"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"], 'Isthmus')
+                        if query_result is not None:
+                            result = TestResult("Calcite", "DataFusion",
+                                                f'{substrait_queries["Calcite"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                f"{sf}", 'Parquet', query_result, benchmark_times)
+                            export_benchmark_result(result, export_filename)
+                            export_file = True
+                            results.append(result)
 
-            # Print results
-            count = 0
-            for i in range(1,23):
-                print("-----------------------------------------------------------------------------------\n\n")
-                print(f"Results for Q{i}:")
-                print("\n")
-                q_count = 0
-                for r in results:
-                    if r.q[1:] == str(i):
-                        count += 1
-                        q_count += 1
-                        print(r.__str__())
-                print(f"\n\tCount: {q_count}\n")
+                    if compodb.ibis_comp:
+                        query_result, benchmark_times = compodb.datafusion_engine.substrait(
+                            substrait_queries["Ibis"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                        if query_result is not None:
+                            result = TestResult("Ibis", "DataFusion",
+                                                f'{substrait_queries["Ibis"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                f"{sf}", 'Parquet', query_result, benchmark_times)
+                            export_benchmark_result(result, export_filename)
+                            export_file = True
+                            results.append(result)
 
-            print(f"\nCOUNT: {count}\n")
+                    # SQL test
+                    query_result, benchmark_times = compodb.datafusion_engine.sql(sql_query)
+                    if query_result is not None:
+                        result = TestResult("SQL", "DataFusion",
+                                            f'{sql_query}',
+                                            f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                            f"{sf}", 'Parquet', query_result, benchmark_times)
+                        export_benchmark_result(result, export_filename)
+                        export_file = True
+                        results.append(result)
 
-            # Create csv-Files with Results
-            create_csv_results(results, sf, query_set)
+                # Execute on DataFusions Engine
+
+                if compodb.acero_eng:
+
+                    if compodb.duckdb_opt:
+                        query_result, benchmark_times = compodb.acero_engine.substrait(
+                            substrait_queries["DuckDB"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                        if query_result is not None:
+                            result = TestResult("DuckDB", "Acero",
+                                                f'{substrait_queries["DuckDB"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                f"{sf}", 'Parquet', query_result, benchmark_times)
+                            export_benchmark_result(result, export_filename)
+                            export_file = True
+                            results.append(result)
+
+                    if compodb.datafusion_opt:
+                        query_result, benchmark_times = compodb.acero_engine.substrait(
+                            substrait_queries["DataFusion"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                        if query_result is not None:
+                            result = TestResult("DataFusion", "Acero",
+                                                f'{substrait_queries["DataFusion"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                f"{sf}", 'Parquet', query_result, benchmark_times)
+                            export_benchmark_result(result, export_filename)
+                            export_file = True
+                            results.append(result)
+
+                    if compodb.calcite_opt:
+                        query_result, benchmark_times = compodb.acero_engine.substrait(
+                            substrait_queries["Calcite"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                        if query_result is not None:
+                            result = TestResult("Calcite", "Acero",
+                                                f'{substrait_queries["Calcite"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                f"{sf}", 'Parquet', query_result, benchmark_times)
+                            export_benchmark_result(result, export_filename)
+                            export_file = True
+                            results.append(result)
+
+                    if compodb.ibis_comp:
+                        query_result, benchmark_times = compodb.acero_engine.substrait(
+                            substrait_queries["Ibis"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                        if query_result is not None:
+                            result = TestResult("Ibis", "Acero",
+                                                f'{substrait_queries["Ibis"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                f"{sf}", 'Parquet', query_result, benchmark_times)
+                            export_benchmark_result(result, export_filename)
+                            export_file = True
+                            results.append(result)
+
+        queries_created = True
 
 
-    print("\n\nBenchmark is completed\n\nTo export the Benchmark results to your local machine open a second Shell and enter:\n\n")
-    print("docker cp test:/data/results/ [destination-path on local machine]\n\n")
-    input("Press Enter after you exported the files to exit the container...")
+    print("\n\nBenchmark is completed\n\nThe exported Benchmark results can be found at your local repository in the folder benchmark_results\n\n")
 
 
 #node --experimental-specifier-resolution=node dist/index.js -p /home/chris1187/BA/substrait-js/substrait_ibis_q1.json -o /home/chris1187/BA/

@@ -7,31 +7,33 @@ from ibis_substrait.compiler.core import SubstraitCompiler
 
 class IbisProducer():
 
-    def __init__(self, sf):
+    def __init__(self):
         self._db_connection = ibis.duckdb.connect()
         self._db_connection.con.execute("INSTALL substrait")
         self._db_connection.con.execute("LOAD substrait")
-        self._db_connection.con.execute(f"CALL dbgen(sf={sf})")
-        self.sf = sf
+        self._db_connection.con.execute(f"CALL dbgen(sf=1)")
 
     def produce_substrait(self, query, q_set):
         try:
-            #ibis_expr = self.get_ibis_expr(query.split('.')[0])
-            #compiler = SubstraitCompiler()
-            #tpch_proto_bytes = compiler.compile(ibis_expr)
-            #substrait_plan = json_format.MessageToJson(tpch_proto_bytes)
-            with open(f"/queries/tpch_ibis_json/{query.split('.')[0]}.json", "r") as f:
-                substrait_plan = json.loads(f.read())
-            substrait_json = json.dumps(substrait_plan, indent=2)
-            file_name = f"/data/substrait_plans/substrait_{q_set.split('_')[2]}_ibis_{query.split('.')[0]}.json"
+            if q_set != 'tpch_sql_original':
+                ibis_expr = self.get_ibis_expr(query.split('.')[0])
+                compiler = SubstraitCompiler()
+                tpch_proto_bytes = compiler.compile(ibis_expr)
+                substrait_json = json_format.MessageToJson(tpch_proto_bytes)
+            else:
+                with open(f"/queries/tpch_ibis_json/{query.split('.')[0]}.json", "r") as f:
+                    substrait_plan = json.loads(f.read())
+                substrait_json = json.dumps(substrait_plan, indent=2)
+            #file_name = f"/data/substrait_plans/substrait_{q_set.split('_')[2]}_ibis_{query.split('.')[0]}.json"
             #with open(file_name, "w") as outfile:
             #    outfile.write(substrait_json)
+
             print(f"PROD Ibis\t\tPROD SUCCESS")
-            #print(substrait_json)
+
             return substrait_json
 
         except Exception as e:
-            print(f"PROD Ibis\t\tPROD EXCEPTION: Ibis SubstraitCompiler not working on {query.split('.')[0]}: {repr(e)}")
+            print(f"PROD Ibis\t\tPROD EXCEPTION: Ibis SubstraitCompiler not working on {q_set} {query.split('.')[0]}: {repr(e)}")
 
             # Reconnect after Exception
             self._db_connection.con.close()

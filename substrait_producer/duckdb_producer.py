@@ -3,15 +3,11 @@ import json
 import duckdb
 
 class DuckDBProducer:
-    def __init__(self, sf, db_connection=None):
-        if db_connection is not None:
-            self.db_connection = db_connection
-        else:
-            self.db_connection = duckdb.connect()
-            self.db_connection.execute("INSTALL substrait")
-            self.db_connection.execute("LOAD substrait")
-            self.db_connection.execute(f"CALL dbgen(sf={sf})")
-            self.sf = sf
+    def __init__(self):
+        self.db_connection = duckdb.connect()
+        self.db_connection.execute("INSTALL substrait")
+        self.db_connection.execute("LOAD substrait")
+        self.db_connection.execute(f"CALL dbgen(sf=1)")
 
     def produce_substrait(self, query, filename, q_set):
         try:

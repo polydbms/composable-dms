@@ -12,6 +12,9 @@ from datafusion import substrait as ds
 from google.protobuf.json_format import Parse
 from substrait.gen.proto.plan_pb2 import Plan
 
+from times import Times
+
+
 class DataFusionConsumer():
 
     def __init__(self, producer=None):
@@ -42,12 +45,7 @@ class DataFusionConsumer():
             os.system("mv data/tpch_parquet/REGION.parquet data/tpch_parquet/region.parquet")
 
 
-    def test_substrait(self, substrait_query, q, sf, producer):
-
-        #print(substrait_query)
-
-        if q == 'q18.sql' or q == 'q1.sql' or q == 'q6.sql':      # DataFusion thread panics at index out of bounds
-            return None
+    def substrait(self, substrait_query, producer=None):
 
         if producer == 'Isthmus':
             os.system("mv data/tpch_parquet/lineitem.parquet data/tpch_parquet/LINEITEM.parquet")
@@ -77,8 +75,9 @@ class DataFusionConsumer():
                 if (i == 1) | (i == 2) | (i == 3):
                     times.append(resCPU)
             timeAVG = (times[0] + times[1] + times[2]) / 3
-            res_obj = TestResult('TPC-H', 'Substrait', 'DataFusion', 'Parquet', producer, sf, q.split('.')[0],
-                                 df_result.to_arrow_table(), times, timeAVG)
+
+            times_obj = Times(times, timeAVG)
+
             print(f"TEST DataFusion\t\tSUCCESS")
 
             if producer == 'Isthmus':
@@ -91,7 +90,7 @@ class DataFusionConsumer():
                 os.system("mv data/tpch_parquet/ORDERS.parquet data/tpch_parquet/orders.parquet")
                 os.system("mv data/tpch_parquet/REGION.parquet data/tpch_parquet/region.parquet")
 
-            return res_obj
+            return df_result.to_arrow_table(), times_obj
 
         except Exception as e:
             print(f"TEST DataFusion\t\tEXCEPTION: Substrait not working: {repr(e)[:100]}")
@@ -106,10 +105,9 @@ class DataFusionConsumer():
                 os.system("mv data/tpch_parquet/ORDERS.parquet data/tpch_parquet/orders.parquet")
                 os.system("mv data/tpch_parquet/REGION.parquet data/tpch_parquet/region.parquet")
 
-            return None
+            return None, None
 
-    def test_sql(self, sql_query, q, sf):
-
+    def sql(self, sql_query):
         times = []
         try:
             for i in range(4):
@@ -122,13 +120,13 @@ class DataFusionConsumer():
                 if (i == 1) | (i == 2) | (i == 3):
                     times.append(resCPU)
             timeAVG = (times[0] + times[1] + times[2]) / 3
-            # print(query_result)
-            res_obj = TestResult('TPC-H', 'SQL', 'DataFusion', 'Parquet', '-- SQL', sf, q.split('.')[0], query_result,
-                                 times, timeAVG)
+
+            times_obj = Times(times, timeAVG)
+
             print(f"TEST DataFusion\t\tSUCCESS")
 
-            return res_obj
+            return query_result, times_obj
 
         except Exception as e:
             print(f"TEST DataFusion\t\tEXCEPTION: SQL not working: {repr(e)[:100]}")
-            return None
+            return None, None
