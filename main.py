@@ -197,13 +197,13 @@ if __name__ == "__main__":
 
     # Run the Benchmark
 
-    print("\n\tStarting the Benchmark\n")
+    print("\n\n\tStarting the Benchmark\n")
 
     # Init
     isthmus_schema_list = get_isthmus_schema()
     results = []    # list[TestResult]
 
-    export_filename = f"benchmark_results/benchmark_results.csv"
+    export_filename = f"/benchmark_results/benchmark_results.csv"
     now = datetime.now().strftime("%Y%m%d%H%M%S")
     if os.path.isfile(export_filename):
         os.system(f"mv {export_filename} {export_filename.split('.'[0])}_{str(now)}.csv")
