@@ -146,6 +146,7 @@ def export_benchmark_result(result: TestResult, filename) -> None:
                        "PlanProducer": f"{result.producer}", "Engine": f"{result.engine}",
                        "Measurements": f"{result.times.measurements}", "Runtime": f"{result.times.runtime}"})
     if not export_file:
+        input("Wait")
         df.write_csv(filename)
     else:
         try:
@@ -206,6 +207,8 @@ if __name__ == "__main__":
 
     export_filename = pathlib.Path("/benchmark_results/benchmark_results.csv")
     export_filename = export_filename.resolve()
+
+    print(export_filename)
 
     now = datetime.now().strftime("%Y%m%d%H%M%S")
     if os.path.isfile("/benchmark_results/benchmark_results.csv"):
