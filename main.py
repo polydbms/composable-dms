@@ -174,13 +174,13 @@ if __name__ == "__main__":
 
     print("> Read in configuration\n")
     compiler, optimizer, engines = load_compodb_config("configuration.yml")
-    print("> CompoDB configured as followed:\n>  Compiler:")
+    print("> CompoDB configured as follows:\n>   Compiler:")
     for comp in compiler:
         print(f">\t{comp}")
-    print(">  Optimizer:")
+    print(">   Optimizer:")
     for opt in optimizer:
         print(f">\t{opt}")
-    print(">  Engine:")
+    print(">   Engines:")
     for eng in engines:
         print(f">\t{eng}")
 

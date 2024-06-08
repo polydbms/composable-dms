@@ -27,6 +27,6 @@ class DuckDBProducer:
             self.db_connection = duckdb.connect()
             self.db_connection.execute("INSTALL substrait")
             self.db_connection.execute("LOAD substrait")
-            self.db_connection.execute(f"CALL dbgen(sf={self.sf})")
+            self.db_connection.execute(f"CALL dbgen(sf=1)")
 
             return None
