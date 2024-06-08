@@ -1,5 +1,12 @@
 FROM continuumio/miniconda3
 
+RUN addgroup --g 1024 groupcontainer
+RUN adduser -u 1024 -G groupcontainer -h /home/containeruser -D containeruser
+
+USER containeruser
+
+RUN mkdir /home/containeruser/benchmark_results
+
 COPY environment.yml .
 COPY configuration.yml .
 
@@ -22,11 +29,6 @@ COPY compo_db.py .
 COPY test_result.py .
 COPY times.py .
 
-RUN addgroup --g 1024 groupcontainer
-RUN adduser -u 1024 -G groupcontainer -h /home/containeruser -D containeruser
 
-USER containeruser
-
-RUN mkdir /home/containeruser/benchmark_results
 
 ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "composable-dms", "python", "main.py"]
