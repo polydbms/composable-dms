@@ -1,7 +1,7 @@
 FROM continuumio/miniconda3
 
-RUN addgroup --g 1024 groupcontainer
-RUN adduser -u 1024 -G groupcontainer -h /home/containeruser -D containeruser
+RUN addgroup --gid 1024 groupcontainer
+RUN adduser -uid 1024 -G groupcontainer -h /home/containeruser -D containeruser
 
 USER containeruser
 
