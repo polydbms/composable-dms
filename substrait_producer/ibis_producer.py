@@ -40,7 +40,7 @@ class IbisProducer():
             self._db_connection = ibis.duckdb.connect()
             self._db_connection.con.execute("INSTALL substrait")
             self._db_connection.con.execute("LOAD substrait")
-            self._db_connection.con.execute(f"CALL dbgen(sf={self.sf})")
+            self._db_connection.con.execute(f"CALL dbgen(sf=1)")
 
             return None
 
