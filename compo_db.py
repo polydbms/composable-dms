@@ -13,39 +13,39 @@ class CompoDB:
         self.duckdb_eng = False
         self.datafusion_eng = False
         self.acero_eng = False
-        print("\n> Creating the CompoDB components ..")
+        print("\n> Creating the CompoDB components ..\n")
         for comp in compiler:
             if comp == 'Ibis':
                 self.ibis_comp = True
                 self.ibis_compiler = ibis_producer.IbisProducer()
-                print("> Ibis compiler created\n")
+                print("> Ibis compiler created")
 
         for opt in optimizer:
             if opt == 'DuckDB':
                 self.duckdb_opt = True
                 self.duckdb_optimizer = duckdb_producer.DuckDBProducer()
-                print("> DuckDB optimizer created\n")
+                print("> DuckDB optimizer created")
             if opt == 'DataFusion':
                 self.datafusion_opt = True
                 self.datafusion_optimizer = datafusion_producer.DataFusionProducer()
-                print("> DataFusion optimizer created\n")
+                print("> DataFusion optimizer created")
             if opt == 'Calcite':
                 self.calcite_opt = True
                 self.calcite_optimizer = isthmus_producer.IsthmusProducer()
-                print("> Calcite optimizer created\n")
+                print("> Calcite optimizer created")
 
         for eng in engines:
             if eng == 'DuckDB':
                 self.duckdb_eng = True
                 self.duckdb_engine = duckdb_engine.DuckDBConsumer()
-                print("> DuckDB engine created\n")
+                print("> DuckDB engine created")
             if eng == 'DataFusion':
                 self.datafusion_eng = True
                 self.datafusion_engine = datafusion_engine.DataFusionConsumer()
-                print("> DataFusion engine created\n")
+                print("> DataFusion engine created")
             if eng == 'Acero':
                 self.acero_eng = True
                 self.acero_engine = acero_engine.AceroConsumer()
-                print("> Acero engine created\n")
+                print("> Acero engine created")
 
 

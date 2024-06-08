@@ -3,6 +3,7 @@ import polars as pl
 import duckdb
 import yaml
 from datetime import datetime
+import pathlib
 
 import pyarrow as pa
 from pyarrow.lib import tobytes
@@ -203,7 +204,8 @@ if __name__ == "__main__":
     isthmus_schema_list = get_isthmus_schema()
     results = []    # list[TestResult]
 
-    export_filename = f"/benchmark_results/benchmark_results.csv"
+    export_filename: pathlib.Path = "benchmark_results" / "benchmark_results.csv"
+
     now = datetime.now().strftime("%Y%m%d%H%M%S")
     if os.path.isfile("/benchmark_results/benchmark_results.csv"):
         os.system(f"mv benchmark_results/benchmark_results.csv /benchmark_results/benchmark_results_{str(now)}.csv")
