@@ -204,7 +204,8 @@ if __name__ == "__main__":
     isthmus_schema_list = get_isthmus_schema()
     results = []    # list[TestResult]
 
-    export_filename: pathlib.Path = "benchmark_results" / "benchmark_results.csv"
+    export_filename = pathlib.Path("/benchmark_results/benchmark_results.csv")
+    export_filename = export_filename.resolve()
 
     now = datetime.now().strftime("%Y%m%d%H%M%S")
     if os.path.isfile("/benchmark_results/benchmark_results.csv"):
