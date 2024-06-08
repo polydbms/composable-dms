@@ -238,7 +238,7 @@ if __name__ == "__main__":
             for q in os.listdir(f"/queries/{query_set}"):
 
                 print("\n--------------------------------------------------------------------------")
-                print(f"\n\tRUN {query_set.split('_')[2]} {q.split('.')[0].upper()}:\n")
+                print(f"\n\tRUN {query_set.split('_')[2]} {q.split('.')[0].upper()} with sf{sf}:\n")
 
                 sql_query = get_sql_query(q, query_set)
 
