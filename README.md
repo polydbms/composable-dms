@@ -35,7 +35,7 @@ make build
 When the image is created, you can start the Benchmark Test by:
 
 ```commandline
-docker run -it --rm --name=test --mount source=test-data,destination=/data benchmark_test
+docker run -it --rm --name=test -v $(pwd)/benchmark_results:/benchmark_results --mount source=test-data,destination=/data benchmark_test
 ```
 
 Right after starting the test, you will get prompted to enter the desired Scale Factors for the tests. You can enter 
