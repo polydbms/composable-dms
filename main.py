@@ -145,6 +145,7 @@ if __name__ == "__main__":
         print(f"Creating {sf}GB of testing data ..")
         create_tpch_data(sf)
         print("> data successfully created\n")
+        print(f"\nQueries created: {queries_created}\n")
 
         #query_set = input("Enter query set (tpch_sql_original | tpch_sql_reduced): ")
 
