@@ -136,6 +136,10 @@ if __name__ == "__main__":
         os.system("touch /benchmark_results/benchmark_results.csv")
     else:
         os.system("touch /benchmark_results/benchmark_results.csv")
+
+    if not os.path.exists("/data/tpch_parquet/"):
+        os.system("mkdir /data/tpch_parquet/")
+    init_data = False
     export_file = False
     queries_created = False
     substrait_queries = {}
@@ -146,6 +150,12 @@ if __name__ == "__main__":
         create_tpch_data(sf)
         print("> data successfully created\n")
         print(f"\nQueries created: {queries_created}\n")
+
+        # Register Tables with DataFusion
+        if not init_data:
+            compodb.datafusion_optimizer.register_tables()
+            compodb.datafusion_engine.register_tables()
+            init_data = True
 
         #query_set = input("Enter query set (tpch_sql_original | tpch_sql_reduced): ")
 

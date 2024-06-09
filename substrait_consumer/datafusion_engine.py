@@ -20,9 +20,6 @@ class DataFusionConsumer():
     def __init__(self, producer=None):
         self.ctx = SessionContext()
 
-        for table in os.listdir("/data/tpch_parquet/"):
-            if table.endswith(".parquet"):
-                self.ctx.register_parquet(f"{table.split('.')[0]}", f"/data/tpch_parquet/{table}")
 
 
     def substrait(self, substrait_query, producer=None):
@@ -104,3 +101,8 @@ class DataFusionConsumer():
 
         except Exception as e:
             return None, e
+
+    def register_tables(self):
+        for table in os.listdir("/data/tpch_parquet/"):
+            if table.endswith(".parquet"):
+                self.ctx.register_parquet(f"{table.split('.')[0]}", f"/data/tpch_parquet/{table}")

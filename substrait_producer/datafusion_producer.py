@@ -10,10 +10,6 @@ class DataFusionProducer:
     def __init__(self):
         self.ctx = SessionContext()
 
-        for table in os.listdir("/data/tpch_parquet/"):
-            if table.endswith(".parquet"):
-                self.ctx.register_parquet(f"{table.split('.')[0]}", f"/data/tpch_parquet/{table}")
-
     def produce_substrait(self, query, filename, q_set):
         try:
             substrait_proto = plan_pb2.Plan()
@@ -29,3 +25,8 @@ class DataFusionProducer:
         except Exception as e:
             print(f"PROD DataFusion\t\t\tPROD EXCEPTION: {filename.split('.')[0]}: {repr(e)}")
             return None
+
+    def register_tables(self):
+        for table in os.listdir("/data/tpch_parquet/"):
+            if table.endswith(".parquet"):
+                self.ctx.register_parquet(f"{table.split('.')[0]}", f"/data/tpch_parquet/{table}")
