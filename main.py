@@ -146,7 +146,6 @@ if __name__ == "__main__":
         create_tpch_data(sf)
         print("> data successfully created\n")
         print(f"\nQueries created: {queries_created}\n")
-        print(substrait_queries)
 
         #query_set = input("Enter query set (tpch_sql_original | tpch_sql_reduced): ")
 
@@ -438,8 +437,6 @@ if __name__ == "__main__":
                             pass
 
         queries_created = True
-
-
 
     print("\n\n\nBenchmark is completed !\n\nThe exported Benchmark results can be found at your local repository in the folder benchmark_results\n")
 
