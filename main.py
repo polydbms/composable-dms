@@ -161,23 +161,27 @@ if __name__ == "__main__":
                 sql_query = get_sql_query(q, query_set)
 
                 # Create all the Substrait queries once
-                #if not queries_created:
-                if compodb.duckdb_opt:
-                    duckdb_query = compodb.duckdb_optimizer.produce_substrait(sql_query, q, query_set)
-                    if duckdb_query is not None:
-                        substrait_queries.update({"DuckDB": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": duckdb_query}}})
-                if compodb.ibis_comp:
-                    ibis_query = compodb.ibis_compiler.produce_substrait(q, query_set)
-                    if ibis_query is not None:
-                        substrait_queries.update({"Ibis": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": ibis_query}}})
-                if compodb.datafusion_opt:
-                    datafusion_query = compodb.datafusion_optimizer.produce_substrait(sql_query, q, query_set)
-                    if datafusion_query is not None:
-                        substrait_queries.update({"DataFusion": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": datafusion_query}}})
-                if compodb.calcite_opt:
-                    calcite_query = compodb.calcite_optimizer.produce_substrait(isthmus_schema_list, sql_query, q, query_set)
-                    if calcite_query is not None:
-                        substrait_queries.update({"Calcite": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": calcite_query}}})
+                if not queries_created:
+                    if compodb.duckdb_opt:
+                        duckdb_query = compodb.duckdb_optimizer.produce_substrait(sql_query, q, query_set)
+                        if duckdb_query is not None:
+                            substrait_queries["DuckDB"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"] = duckdb_query
+                            #substrait_queries.update({"DuckDB": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": duckdb_query}}})
+                    if compodb.ibis_comp:
+                        ibis_query = compodb.ibis_compiler.produce_substrait(q, query_set)
+                        if ibis_query is not None:
+                            substrait_queries["Ibis"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"] = ibis_query
+                            #substrait_queries.update({"Ibis": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": ibis_query}}})
+                    if compodb.datafusion_opt:
+                        datafusion_query = compodb.datafusion_optimizer.produce_substrait(sql_query, q, query_set)
+                        if datafusion_query is not None:
+                            substrait_queries["DataFusion"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"] = datafusion_query
+                            #substrait_queries.update({"DataFusion": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": datafusion_query}}})
+                    if compodb.calcite_opt:
+                        calcite_query = compodb.calcite_optimizer.produce_substrait(isthmus_schema_list, sql_query, q, query_set)
+                        if calcite_query is not None:
+                            substrait_queries["Calcite"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"] = calcite_query
+                            #substrait_queries.update({"Calcite": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": calcite_query}}})
 
                 # Run the queries
                 # Execute on DuckDBs Engine
@@ -189,7 +193,7 @@ if __name__ == "__main__":
                             query_result, benchmark = compodb.duckdb_engine.substrait(
                                 substrait_queries["DuckDB"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
                             if query_result is not None:
-                                print(f"TEST DuckDB Query\t\t\tSUCCESS")
+                                print(f"TEST DuckDB Query\t\tSUCCESS")
                                 result = TestResult("DuckDB", "DuckDB",
                                                      f'{substrait_queries["DuckDB"][query_set.split("_")[2]][q.split(".")[0]]}',
                                                      f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
@@ -198,7 +202,7 @@ if __name__ == "__main__":
                                 export_file = True
                                 results.append(result)
                             else:
-                                print(f"TEST DuckDB Query\t\t\tEXCEPTION  Substrait not working: {repr(benchmark)[:100]}")
+                                print(f"TEST DuckDB Query\t\tEXCEPTION  Substrait not working: {repr(benchmark)[:100]}")
                         except KeyError:
                             pass
 
@@ -274,94 +278,92 @@ if __name__ == "__main__":
 
                 if compodb.datafusion_eng:
                     print("\n\tRUN DataFusion Engine\n")
-                    if (query_set.split('_')[2] == 'original') and (q == 'q18.sql' or q == 'q1.sql' or q == 'q6.sql'):  # DataFusion thread panics at index out of bounds
-                        continue
+                    if not ((query_set.split('_')[2] == 'original') and (q == 'q18.sql' or q == 'q1.sql' or q == 'q6.sql')):  # DataFusion thread panics at index out of bounds
+                        if compodb.duckdb_opt:
+                            try:
+                                query_result, benchmark = compodb.datafusion_engine.substrait(
+                                    substrait_queries["DuckDB"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                                if query_result is not None:
+                                    print(f"TEST DuckDB Query\t\tSUCCESS")
+                                    result = TestResult("DuckDB", "DataFusion",
+                                                        f'{substrait_queries["DuckDB"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                        f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                        f"{sf}", 'Parquet', query_result, benchmark)
+                                    export_benchmark_result(result, export_filename)
+                                    export_file = True
+                                    results.append(result)
+                                else:
+                                    print(f"TEST DuckDB Query\t\tEXCEPTION  Substrait not working: {repr(benchmark)[:100]}")
+                            except KeyError:
+                                pass
 
-                    if compodb.duckdb_opt:
-                        try:
-                            query_result, benchmark = compodb.datafusion_engine.substrait(
-                                substrait_queries["DuckDB"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
-                            if query_result is not None:
-                                print(f"TEST DuckDB Query\t\t\tSUCCESS")
-                                result = TestResult("DuckDB", "DataFusion",
-                                                    f'{substrait_queries["DuckDB"][query_set.split("_")[2]][q.split(".")[0]]}',
-                                                    f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
-                                                    f"{sf}", 'Parquet', query_result, benchmark)
-                                export_benchmark_result(result, export_filename)
-                                export_file = True
-                                results.append(result)
-                            else:
-                                print(f"TEST DuckDB Query\t\t\tEXCEPTION  Substrait not working: {repr(benchmark)[:100]}")
-                        except KeyError:
-                            pass
+                        if compodb.datafusion_opt:
+                            try:
+                                query_result, benchmark = compodb.datafusion_engine.substrait(
+                                    substrait_queries["DataFusion"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                                if query_result is not None:
+                                    print(f"TEST DataFusion Query\t\tSUCCESS")
+                                    result = TestResult("DataFusion", "DataFusion",
+                                                        f'{substrait_queries["DataFusion"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                        f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                        f"{sf}", 'Parquet', query_result, benchmark)
+                                    export_benchmark_result(result, export_filename)
+                                    export_file = True
+                                    results.append(result)
+                                else:
+                                    print(f"TEST DataFusion Query\t\tEXCEPTION  Substrait not working: {repr(benchmark)[:100]}")
+                            except KeyError:
+                                pass
 
-                    if compodb.datafusion_opt:
-                        try:
-                            query_result, benchmark = compodb.datafusion_engine.substrait(
-                                substrait_queries["DataFusion"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
-                            if query_result is not None:
-                                print(f"TEST DataFusion Query\t\tSUCCESS")
-                                result = TestResult("DataFusion", "DataFusion",
-                                                    f'{substrait_queries["DataFusion"][query_set.split("_")[2]][q.split(".")[0]]}',
-                                                    f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
-                                                    f"{sf}", 'Parquet', query_result, benchmark)
-                                export_benchmark_result(result, export_filename)
-                                export_file = True
-                                results.append(result)
-                            else:
-                                print(f"TEST DataFusion Query\t\tEXCEPTION  Substrait not working: {repr(benchmark)[:100]}")
-                        except KeyError:
-                            pass
+                        if compodb.calcite_opt:
+                            try:
+                                query_result, benchmark = compodb.datafusion_engine.substrait(
+                                    substrait_queries["Calcite"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"], 'Isthmus')
+                                if query_result is not None:
+                                    print(f"TEST Calcite Query\t\tSUCCESS")
+                                    result = TestResult("Calcite", "DataFusion",
+                                                        f'{substrait_queries["Calcite"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                        f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                        f"{sf}", 'Parquet', query_result, benchmark)
+                                    export_benchmark_result(result, export_filename)
+                                    export_file = True
+                                    results.append(result)
+                                else:
+                                    print(f"TEST Calcite Query\t\tEXCEPTION  Substrait not working: {repr(benchmark)[:100]}")
+                            except KeyError:
+                                pass
 
-                    if compodb.calcite_opt:
-                        try:
-                            query_result, benchmark = compodb.datafusion_engine.substrait(
-                                substrait_queries["Calcite"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"], 'Isthmus')
-                            if query_result is not None:
-                                print(f"TEST Calcite Query\t\tSUCCESS")
-                                result = TestResult("Calcite", "DataFusion",
-                                                    f'{substrait_queries["Calcite"][query_set.split("_")[2]][q.split(".")[0]]}',
-                                                    f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
-                                                    f"{sf}", 'Parquet', query_result, benchmark)
-                                export_benchmark_result(result, export_filename)
-                                export_file = True
-                                results.append(result)
-                            else:
-                                print(f"TEST Calcite Query\t\tEXCEPTION  Substrait not working: {repr(benchmark)[:100]}")
-                        except KeyError:
-                            pass
+                        if compodb.ibis_comp:
+                            try:
+                                query_result, benchmark = compodb.datafusion_engine.substrait(
+                                    substrait_queries["Ibis"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                                if query_result is not None:
+                                    print(f"TEST Ibis Query\t\t\tSUCCESS")
+                                    result = TestResult("Ibis", "DataFusion",
+                                                        f'{substrait_queries["Ibis"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                        f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                        f"{sf}", 'Parquet', query_result, benchmark)
+                                    export_benchmark_result(result, export_filename)
+                                    export_file = True
+                                    results.append(result)
+                                else:
+                                    print(f"TEST Ibis Query\t\t\tEXCEPTION  Substrait not working: {repr(benchmark)[:100]}")
+                            except KeyError:
+                                pass
 
-                    if compodb.ibis_comp:
-                        try:
-                            query_result, benchmark = compodb.datafusion_engine.substrait(
-                                substrait_queries["Ibis"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
-                            if query_result is not None:
-                                print(f"TEST Ibis Query\t\t\tSUCCESS")
-                                result = TestResult("Ibis", "DataFusion",
-                                                    f'{substrait_queries["Ibis"][query_set.split("_")[2]][q.split(".")[0]]}',
-                                                    f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
-                                                    f"{sf}", 'Parquet', query_result, benchmark)
-                                export_benchmark_result(result, export_filename)
-                                export_file = True
-                                results.append(result)
-                            else:
-                                print(f"TEST Ibis Query\t\t\tEXCEPTION  Substrait not working: {repr(benchmark)[:100]}")
-                        except KeyError:
-                            pass
-
-                    # SQL test
-                    query_result, benchmark = compodb.datafusion_engine.sql(sql_query)
-                    if query_result is not None:
-                        print(f"TEST SQL Query\t\t\tSUCCESS")
-                        result = TestResult("SQL", "DataFusion",
-                                            f'{sql_query}',
-                                            f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
-                                            f"{sf}", 'Parquet', query_result, benchmark)
-                        export_benchmark_result(result, export_filename)
-                        export_file = True
-                        results.append(result)
-                    else:
-                        print(f"TEST SQL Query\t\t\tEXCEPTION  SQL not working: {repr(benchmark)[:100]}")
+                        # SQL test
+                        query_result, benchmark = compodb.datafusion_engine.sql(sql_query)
+                        if query_result is not None:
+                            print(f"TEST SQL Query\t\t\tSUCCESS")
+                            result = TestResult("SQL", "DataFusion",
+                                                f'{sql_query}',
+                                                f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
+                                                f"{sf}", 'Parquet', query_result, benchmark)
+                            export_benchmark_result(result, export_filename)
+                            export_file = True
+                            results.append(result)
+                        else:
+                            print(f"TEST SQL Query\t\t\tEXCEPTION  SQL not working: {repr(benchmark)[:100]}")
 
                 # Execute on DataFusions Engine
 
@@ -372,7 +374,7 @@ if __name__ == "__main__":
                             query_result, benchmark = compodb.acero_engine.substrait(
                                 substrait_queries["DuckDB"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
                             if query_result is not None:
-                                print(f"TEST DuckDB Query\t\t\tSUCCESS")
+                                print(f"TEST DuckDB Query\t\tSUCCESS")
                                 result = TestResult("DuckDB", "Acero",
                                                     f'{substrait_queries["DuckDB"][query_set.split("_")[2]][q.split(".")[0]]}',
                                                     f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
@@ -381,7 +383,7 @@ if __name__ == "__main__":
                                 export_file = True
                                 results.append(result)
                             else:
-                                print(f"TEST DuckDB Query\t\t\tEXCEPTION  Substrait not working: {repr(benchmark)[:100]}")
+                                print(f"TEST DuckDB Query\t\tEXCEPTION  Substrait not working: {repr(benchmark)[:100]}")
                         except KeyError:
                             pass
 

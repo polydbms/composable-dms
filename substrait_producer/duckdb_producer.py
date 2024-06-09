@@ -16,11 +16,11 @@ class DuckDBProducer:
             #file_name = f"/data/substrait_plans/substrait_{q_set.split('_')[2]}_duckdb_{filename.split('.')[0]}.json"
             #with open(file_name, "w") as outfile:
             #    outfile.write(json.dumps(python_json, indent=2))
-            print(f"PROD DuckDB\t\tPROD SUCCESS")
+            print(f"PROD DuckDB\t\t\tPROD SUCCESS")
             return json.dumps(python_json, indent=2)
 
         except Exception as e:
-            print(f"PROD DuckDB\t\tPROD EXCEPTION: get_substrait_json() not working on {filename.split('.')[0]}: {repr(e)}")
+            print(f"PROD DuckDB\t\t\tPROD EXCEPTION: get_substrait_json() not working on {filename.split('.')[0]}: {repr(e)}")
 
             # Reconnect after Exception
             self.db_connection.close()

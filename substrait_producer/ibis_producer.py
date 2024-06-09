@@ -28,12 +28,12 @@ class IbisProducer():
             #with open(file_name, "w") as outfile:
             #    outfile.write(substrait_json)
 
-            print(f"PROD Ibis\t\tPROD SUCCESS")
+            print(f"PROD Ibis\t\t\tPROD SUCCESS")
 
             return substrait_json
 
         except Exception as e:
-            print(f"PROD Ibis\t\tPROD EXCEPTION: Ibis SubstraitCompiler not working on {q_set} {query.split('.')[0]}: {repr(e)}")
+            print(f"PROD Ibis\t\t\tPROD EXCEPTION: Ibis SubstraitCompiler not working on {q_set} {query.split('.')[0]}: {repr(e)}")
 
             # Reconnect after Exception
             self._db_connection.con.close()

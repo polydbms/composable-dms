@@ -71,7 +71,6 @@ class DataFusionConsumer():
             return df_result.to_arrow_table(), times_obj
 
         except Exception as e:
-            print(f"TEST DataFusion\t\tEXCEPTION: Substrait not working: {repr(e)[:100]}")
 
             if producer == 'Isthmus':
                 os.system("mv data/tpch_parquet/LINEITEM.parquet data/tpch_parquet/lineitem.parquet")

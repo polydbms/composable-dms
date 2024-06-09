@@ -15,12 +15,12 @@ class IsthmusProducer:
             #with open(file_name, "w") as outfile:
             #    outfile.write(json.dumps(python_json, indent=2))
             #    print(f"substrait plan written to: {file_name}")
-            print(f"PROD Isthmus\t\tPROD SUCCESS")
+            print(f"PROD Isthmus\t\t\tPROD SUCCESS")
 
             return json.dumps(python_json, indent=2)
 
         except Exception as e:
-            print(f"PROD Isthmus\t\tPROD EXCEPTION: Isthmus not working: {repr(e)}")
+            print(f"PROD Isthmus\t\t\tPROD EXCEPTION: Isthmus not working: {repr(e)}")
             return None
 
     def get_java_schema(self, schema_list):
