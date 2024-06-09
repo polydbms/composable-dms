@@ -28,3 +28,4 @@ class DataFusionProducer:
 
         except Exception as e:
             print(f"PROD DataFusion\t\tPROD EXCEPTION: {filename.split('.')[0]}: {repr(e)}")
+            return None
