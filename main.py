@@ -165,23 +165,19 @@ if __name__ == "__main__":
                     if compodb.duckdb_opt:
                         duckdb_query = compodb.duckdb_optimizer.produce_substrait(sql_query, q, query_set)
                         if duckdb_query is not None:
-                            substrait_queries["DuckDB"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"] = duckdb_query
-                            #substrait_queries.update({"DuckDB": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": duckdb_query}}})
+                            substrait_queries[f"DuckDB_{query_set.split('_')[2]}_{q.split('.')[0]}"] = duckdb_query
                     if compodb.ibis_comp:
                         ibis_query = compodb.ibis_compiler.produce_substrait(q, query_set)
                         if ibis_query is not None:
-                            substrait_queries["Ibis"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"] = ibis_query
-                            #substrait_queries.update({"Ibis": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": ibis_query}}})
+                            substrait_queries[f"Ibis_{query_set.split('_')[2]}_{q.split('.')[0]}"] = ibis_query
                     if compodb.datafusion_opt:
                         datafusion_query = compodb.datafusion_optimizer.produce_substrait(sql_query, q, query_set)
                         if datafusion_query is not None:
-                            substrait_queries["DataFusion"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"] = datafusion_query
-                            #substrait_queries.update({"DataFusion": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": datafusion_query}}})
+                            substrait_queries[f"DataFusion_{query_set.split('_')[2]}_{q.split('.')[0]}"] = datafusion_query
                     if compodb.calcite_opt:
                         calcite_query = compodb.calcite_optimizer.produce_substrait(isthmus_schema_list, sql_query, q, query_set)
                         if calcite_query is not None:
-                            substrait_queries["Calcite"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"] = calcite_query
-                            #substrait_queries.update({"Calcite": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": calcite_query}}})
+                            substrait_queries[f"Calcite_{query_set.split('_')[2]}_{q.split('.')[0]}"] = calcite_query
 
                 # Run the queries
                 # Execute on DuckDBs Engine
@@ -191,11 +187,11 @@ if __name__ == "__main__":
                     if compodb.duckdb_opt:
                         try:
                             query_result, benchmark = compodb.duckdb_engine.substrait(
-                                substrait_queries["DuckDB"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                                substrait_queries[f"DuckDB_{query_set.split('_')[2]}_{q.split('.')[0]}"])
                             if query_result is not None:
                                 print(f"TEST DuckDB Query\t\tSUCCESS")
                                 result = TestResult("DuckDB", "DuckDB",
-                                                     f'{substrait_queries["DuckDB"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                     substrait_queries[f"DuckDB_{query_set.split('_')[2]}_{q.split('.')[0]}"],
                                                      f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
                                                      f"{sf}", 'Parquet', query_result, benchmark)
                                 export_benchmark_result(result, export_filename)
@@ -209,11 +205,11 @@ if __name__ == "__main__":
                     if compodb.datafusion_opt:
                         try:
                             query_result, benchmark = compodb.duckdb_engine.substrait(
-                                substrait_queries["DataFusion"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                                substrait_queries[f"DataFusion_{query_set.split('_')[2]}_{q.split('.')[0]}"])
                             if query_result is not None:
                                 print(f"TEST DataFusion Query\t\tSUCCESS")
                                 result = TestResult("DataFusion", "DuckDB",
-                                                     f'{substrait_queries["DataFusion"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                     substrait_queries[f"DataFusion_{query_set.split('_')[2]}_{q.split('.')[0]}"],
                                                      f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
                                                      f"{sf}", 'Parquet', query_result, benchmark)
                                 export_benchmark_result(result, export_filename)
@@ -227,11 +223,11 @@ if __name__ == "__main__":
                     if compodb.calcite_opt:
                         try:
                             query_result, benchmark = compodb.duckdb_engine.substrait(
-                                substrait_queries["Calcite"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                                substrait_queries[f"Calcite_{query_set.split('_')[2]}_{q.split('.')[0]}"])
                             if query_result is not None:
                                 print(f"TEST Calcite Query\t\tSUCCESS")
                                 result = TestResult("Calcite", "DuckDB",
-                                                     f'{substrait_queries["Calcite"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                     substrait_queries[f"Calcite_{query_set.split('_')[2]}_{q.split('.')[0]}"],
                                                      f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
                                                      f"{sf}", 'Parquet', query_result, benchmark)
                                 export_benchmark_result(result, export_filename)
@@ -245,11 +241,11 @@ if __name__ == "__main__":
                     if compodb.ibis_comp:
                         try:
                             query_result, benchmark = compodb.duckdb_engine.substrait(
-                                substrait_queries["Ibis"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                                substrait_queries[f"Ibis_{query_set.split('_')[2]}_{q.split('.')[0]}"])
                             if query_result is not None:
                                 print(f"TEST Ibis Query\t\t\tSUCCESS")
                                 result = TestResult("Ibis", "DuckDB",
-                                                     f'{substrait_queries["Ibis"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                     substrait_queries[f"Ibis_{query_set.split('_')[2]}_{q.split('.')[0]}"],
                                                      f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
                                                      f"{sf}", 'Parquet', query_result, benchmark)
                                 export_benchmark_result(result, export_filename)
@@ -282,11 +278,11 @@ if __name__ == "__main__":
                         if compodb.duckdb_opt:
                             try:
                                 query_result, benchmark = compodb.datafusion_engine.substrait(
-                                    substrait_queries["DuckDB"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                                    substrait_queries[f"DuckDB_{query_set.split('_')[2]}_{q.split('.')[0]}"])
                                 if query_result is not None:
                                     print(f"TEST DuckDB Query\t\tSUCCESS")
                                     result = TestResult("DuckDB", "DataFusion",
-                                                        f'{substrait_queries["DuckDB"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                        substrait_queries[f"DuckDB_{query_set.split('_')[2]}_{q.split('.')[0]}"],
                                                         f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
                                                         f"{sf}", 'Parquet', query_result, benchmark)
                                     export_benchmark_result(result, export_filename)
@@ -300,11 +296,11 @@ if __name__ == "__main__":
                         if compodb.datafusion_opt:
                             try:
                                 query_result, benchmark = compodb.datafusion_engine.substrait(
-                                    substrait_queries["DataFusion"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                                    substrait_queries[f"DataFusion_{query_set.split('_')[2]}_{q.split('.')[0]}"])
                                 if query_result is not None:
                                     print(f"TEST DataFusion Query\t\tSUCCESS")
                                     result = TestResult("DataFusion", "DataFusion",
-                                                        f'{substrait_queries["DataFusion"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                        substrait_queries[f"DataFusion_{query_set.split('_')[2]}_{q.split('.')[0]}"],
                                                         f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
                                                         f"{sf}", 'Parquet', query_result, benchmark)
                                     export_benchmark_result(result, export_filename)
@@ -318,11 +314,11 @@ if __name__ == "__main__":
                         if compodb.calcite_opt:
                             try:
                                 query_result, benchmark = compodb.datafusion_engine.substrait(
-                                    substrait_queries["Calcite"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"], 'Isthmus')
+                                    substrait_queries[f"Calcite_{query_set.split('_')[2]}_{q.split('.')[0]}"], 'Isthmus')
                                 if query_result is not None:
                                     print(f"TEST Calcite Query\t\tSUCCESS")
                                     result = TestResult("Calcite", "DataFusion",
-                                                        f'{substrait_queries["Calcite"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                        substrait_queries[f"Calcite_{query_set.split('_')[2]}_{q.split('.')[0]}"],
                                                         f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
                                                         f"{sf}", 'Parquet', query_result, benchmark)
                                     export_benchmark_result(result, export_filename)
@@ -336,11 +332,11 @@ if __name__ == "__main__":
                         if compodb.ibis_comp:
                             try:
                                 query_result, benchmark = compodb.datafusion_engine.substrait(
-                                    substrait_queries["Ibis"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                                    substrait_queries[f"Ibis_{query_set.split('_')[2]}_{q.split('.')[0]}"])
                                 if query_result is not None:
                                     print(f"TEST Ibis Query\t\t\tSUCCESS")
                                     result = TestResult("Ibis", "DataFusion",
-                                                        f'{substrait_queries["Ibis"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                        substrait_queries[f"Ibis_{query_set.split('_')[2]}_{q.split('.')[0]}"],
                                                         f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
                                                         f"{sf}", 'Parquet', query_result, benchmark)
                                     export_benchmark_result(result, export_filename)
@@ -365,18 +361,18 @@ if __name__ == "__main__":
                         else:
                             print(f"TEST SQL Query\t\t\tEXCEPTION  SQL not working: {repr(benchmark)[:100]}")
 
-                # Execute on DataFusions Engine
+                # Execute on Aceros Engine
 
                 if compodb.acero_eng:
                     print("\n\tRUN Acero Engine\n")
                     if compodb.duckdb_opt:
                         try:
                             query_result, benchmark = compodb.acero_engine.substrait(
-                                substrait_queries["DuckDB"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                                substrait_queries[f"DuckDB_{query_set.split('_')[2]}_{q.split('.')[0]}"])
                             if query_result is not None:
                                 print(f"TEST DuckDB Query\t\tSUCCESS")
                                 result = TestResult("DuckDB", "Acero",
-                                                    f'{substrait_queries["DuckDB"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                    substrait_queries[f"DuckDB_{query_set.split('_')[2]}_{q.split('.')[0]}"],
                                                     f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
                                                     f"{sf}", 'Parquet', query_result, benchmark)
                                 export_benchmark_result(result, export_filename)
@@ -390,11 +386,11 @@ if __name__ == "__main__":
                     if compodb.datafusion_opt:
                         try:
                             query_result, benchmark = compodb.acero_engine.substrait(
-                                substrait_queries["DataFusion"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                                substrait_queries[f"DataFusion_{query_set.split('_')[2]}_{q.split('.')[0]}"])
                             if query_result is not None:
                                 print(f"TEST DataFusion Query\t\tSUCCESS")
                                 result = TestResult("DataFusion", "Acero",
-                                                    f'{substrait_queries["DataFusion"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                    substrait_queries[f"DataFusion_{query_set.split('_')[2]}_{q.split('.')[0]}"],
                                                     f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
                                                     f"{sf}", 'Parquet', query_result, benchmark)
                                 export_benchmark_result(result, export_filename)
@@ -408,11 +404,11 @@ if __name__ == "__main__":
                     if compodb.calcite_opt:
                         try:
                             query_result, benchmark = compodb.acero_engine.substrait(
-                                substrait_queries["Calcite"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                                substrait_queries[f"Calcite_{query_set.split('_')[2]}_{q.split('.')[0]}"])
                             if query_result is not None:
                                 print(f"TEST Calcite Query\t\tSUCCESS")
                                 result = TestResult("Calcite", "Acero",
-                                                    f'{substrait_queries["Calcite"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                    substrait_queries[f"Calcite_{query_set.split('_')[2]}_{q.split('.')[0]}"],
                                                     f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
                                                     f"{sf}", 'Parquet', query_result, benchmark)
                                 export_benchmark_result(result, export_filename)
@@ -426,11 +422,11 @@ if __name__ == "__main__":
                     if compodb.ibis_comp:
                         try:
                             query_result, benchmark = compodb.acero_engine.substrait(
-                                substrait_queries["Ibis"][f"{query_set.split('_')[2]}"][f"{q.split('.')[0]}"])
+                                substrait_queries[f"Ibis_{query_set.split('_')[2]}_{q.split('.')[0]}"])
                             if query_result is not None:
                                 print(f"TEST Ibis Query\t\t\tSUCCESS")
                                 result = TestResult("Ibis", "Acero",
-                                                    f'{substrait_queries["Ibis"][query_set.split("_")[2]][q.split(".")[0]]}',
+                                                    substrait_queries[f"Ibis_{query_set.split('_')[2]}_{q.split('.')[0]}"],
                                                     f"{query_set.split('_')[2]}", f"{q.split('.')[0]}",
                                                     f"{sf}", 'Parquet', query_result, benchmark)
                                 export_benchmark_result(result, export_filename)
