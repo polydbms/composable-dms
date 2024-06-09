@@ -1,9 +1,5 @@
 FROM continuumio/miniconda3
 
-RUN apt-get update && apt-get install -y sudo
-RUN addgroup --gid 10057 groupcontainer
-RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
-
 COPY environment.yml .
 COPY configuration.yml .
 
