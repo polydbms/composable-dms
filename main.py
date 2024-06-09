@@ -155,6 +155,8 @@ if __name__ == "__main__":
         if not init_data:
             compodb.datafusion_optimizer.register_tables()
             compodb.datafusion_engine.register_tables()
+            compodb.duckdb_engine.register_views()
+            compodb.acero_engine.register_tables()
             init_data = True
 
         #query_set = input("Enter query set (tpch_sql_original | tpch_sql_reduced): ")

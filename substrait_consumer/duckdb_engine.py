@@ -12,10 +12,6 @@ class DuckDBConsumer():
         self.db_connection.execute("INSTALL substrait")
         self.db_connection.execute("LOAD substrait")
 
-        for table in os.listdir("/data/tpch_parquet/"):
-            if table.endswith(".parquet"):
-                self.db_connection.execute(f"CREATE VIEW {table.split('.')[0]} AS SELECT * FROM read_parquet('/data/tpch_parquet/{table}')")
-
     def substrait(self, substrait_query):
         times = []
         try:
@@ -56,3 +52,8 @@ class DuckDBConsumer():
 
     def print_db(self):
         self.db_connection.sql("SELECT * FROM information_schema.tables").show()
+
+    def register_views(self):
+        for table in os.listdir("/data/tpch_parquet/"):
+            if table.endswith(".parquet"):
+                self.db_connection.execute(f"CREATE VIEW {table.split('.')[0]} AS SELECT * FROM read_parquet('/data/tpch_parquet/{table}')")

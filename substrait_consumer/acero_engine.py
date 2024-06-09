@@ -14,14 +14,6 @@ class AceroConsumer():
     def __init__(self):
         self.tables = {}
         self.table_provider = lambda names, schema: self.tables[names[0].lower()]
-        data_path = "/data/tpch_parquet/"
-        for file in os.listdir(data_path):
-            if file.endswith(".parquet"):
-                table_name = Path(file).stem
-                table_name = table_name.translate(
-                    str.maketrans("", "", string.punctuation)
-                )
-                self.tables[table_name] = pq.read_table(data_path+file)
 
     def substrait(self, substrait_query):
         times = []
@@ -46,3 +38,13 @@ class AceroConsumer():
 
         except Exception as e:
             return None, e
+
+    def register_tables(self):
+        data_path = "/data/tpch_parquet/"
+        for file in os.listdir(data_path):
+            if file.endswith(".parquet"):
+                table_name = Path(file).stem
+                table_name = table_name.translate(
+                    str.maketrans("", "", string.punctuation)
+                )
+                self.tables[table_name] = pq.read_table(data_path+file)
