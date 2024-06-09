@@ -161,23 +161,23 @@ if __name__ == "__main__":
                 sql_query = get_sql_query(q, query_set)
 
                 # Create all the Substrait queries once
-                if not queries_created:
-                    if compodb.duckdb_opt:
-                        duckdb_query = compodb.duckdb_optimizer.produce_substrait(sql_query, q, query_set)
-                        if duckdb_query is not None:
-                            substrait_queries.update({"DuckDB": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": duckdb_query}}})
-                    if compodb.ibis_comp:
-                        ibis_query = compodb.ibis_compiler.produce_substrait(q, query_set)
-                        if ibis_query is not None:
-                            substrait_queries.update({"Ibis": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": ibis_query}}})
-                    if compodb.datafusion_opt:
-                        datafusion_query = compodb.datafusion_optimizer.produce_substrait(sql_query, q, query_set)
-                        if datafusion_query is not None:
-                            substrait_queries.update({"DataFusion": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": datafusion_query}}})
-                    if compodb.calcite_opt:
-                        calcite_query = compodb.calcite_optimizer.produce_substrait(isthmus_schema_list, sql_query, q, query_set)
-                        if calcite_query is not None:
-                            substrait_queries.update({"Calcite": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": calcite_query}}})
+                #if not queries_created:
+                if compodb.duckdb_opt:
+                    duckdb_query = compodb.duckdb_optimizer.produce_substrait(sql_query, q, query_set)
+                    if duckdb_query is not None:
+                        substrait_queries.update({"DuckDB": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": duckdb_query}}})
+                if compodb.ibis_comp:
+                    ibis_query = compodb.ibis_compiler.produce_substrait(q, query_set)
+                    if ibis_query is not None:
+                        substrait_queries.update({"Ibis": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": ibis_query}}})
+                if compodb.datafusion_opt:
+                    datafusion_query = compodb.datafusion_optimizer.produce_substrait(sql_query, q, query_set)
+                    if datafusion_query is not None:
+                        substrait_queries.update({"DataFusion": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": datafusion_query}}})
+                if compodb.calcite_opt:
+                    calcite_query = compodb.calcite_optimizer.produce_substrait(isthmus_schema_list, sql_query, q, query_set)
+                    if calcite_query is not None:
+                        substrait_queries.update({"Calcite": {f"{query_set.split('_')[2]}": {f"{q.split('.')[0]}": calcite_query}}})
 
                 # Run the queries
                 # Execute on DuckDBs Engine
