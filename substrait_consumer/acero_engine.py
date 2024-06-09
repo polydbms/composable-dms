@@ -21,26 +21,19 @@ class AceroConsumer():
                 table_name = table_name.translate(
                     str.maketrans("", "", string.punctuation)
                 )
-                #print("ACERO table path:")
-                #print(data_path+file)
                 self.tables[table_name] = pq.read_table(data_path+file)
 
     def substrait(self, substrait_query):
-
         times = []
-
         try:
             for i in range(4):
                 stCPU = time.process_time()
-
                 encoded_substrait = substrait_query.encode()
                 substrait_query = pa._substrait._parse_json_plan(encoded_substrait)
-
                 reader = substrait.run_query(
                     substrait_query, table_provider=self.table_provider
                 )
                 query_result = reader.read_all()
-
                 etCPU = time.process_time()
                 resCPU = (etCPU - stCPU) * 1000
                 if (i == 1) | (i == 2) | (i == 3):
@@ -49,10 +42,7 @@ class AceroConsumer():
 
             times_obj = Times(times, timeAVG)
 
-            print(f"TEST Acero\t\tSUCCESS")
-
             return query_result, times_obj
 
         except Exception as e:
-            print(f"TEST Acero\t\tEXCEPTION: Substrait not working: {repr(e)[:100]}")
-            return None, None
+            return None, e

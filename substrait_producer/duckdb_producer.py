@@ -13,7 +13,7 @@ class DuckDBProducer:
         try:
             json_plan = self.db_connection.get_substrait_json(query).fetchone()[0]
             python_json = json.loads(json_plan)
-            file_name = f"/data/substrait_plans/substrait_{q_set.split('_')[2]}_duckdb_{filename.split('.')[0]}.json"
+            #file_name = f"/data/substrait_plans/substrait_{q_set.split('_')[2]}_duckdb_{filename.split('.')[0]}.json"
             #with open(file_name, "w") as outfile:
             #    outfile.write(json.dumps(python_json, indent=2))
             print(f"PROD DuckDB\t\tPROD SUCCESS")

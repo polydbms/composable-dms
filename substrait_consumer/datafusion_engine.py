@@ -20,29 +20,9 @@ class DataFusionConsumer():
     def __init__(self, producer=None):
         self.ctx = SessionContext()
 
-        if producer == 'Isthmus':
-            os.system("mv data/tpch_parquet/lineitem.parquet data/tpch_parquet/LINEITEM.parquet")
-            os.system("mv data/tpch_parquet/customer.parquet data/tpch_parquet/CUSTOMER.parquet")
-            os.system("mv data/tpch_parquet/part.parquet data/tpch_parquet/PART.parquet")
-            os.system("mv data/tpch_parquet/nation.parquet data/tpch_parquet/NATION.parquet")
-            os.system("mv data/tpch_parquet/partsupp.parquet data/tpch_parquet/PARTSUPP.parquet")
-            os.system("mv data/tpch_parquet/supplier.parquet data/tpch_parquet/SUPPLIER.parquet")
-            os.system("mv data/tpch_parquet/orders.parquet data/tpch_parquet/ORDERS.parquet")
-            os.system("mv data/tpch_parquet/region.parquet data/tpch_parquet/REGION.parquet")
-
         for table in os.listdir("/data/tpch_parquet/"):
             if table.endswith(".parquet"):
                 self.ctx.register_parquet(f"{table.split('.')[0]}", f"/data/tpch_parquet/{table}")
-
-        if producer == 'Isthmus':
-            os.system("mv data/tpch_parquet/LINEITEM.parquet data/tpch_parquet/lineitem.parquet")
-            os.system("mv data/tpch_parquet/CUSTOMER.parquet data/tpch_parquet/customer.parquet")
-            os.system("mv data/tpch_parquet/PART.parquet data/tpch_parquet/part.parquet")
-            os.system("mv data/tpch_parquet/NATION.parquet data/tpch_parquet/nation.parquet")
-            os.system("mv data/tpch_parquet/PARTSUPP.parquet data/tpch_parquet/partsupp.parquet")
-            os.system("mv data/tpch_parquet/SUPPLIER.parquet data/tpch_parquet/supplier.parquet")
-            os.system("mv data/tpch_parquet/ORDERS.parquet data/tpch_parquet/orders.parquet")
-            os.system("mv data/tpch_parquet/REGION.parquet data/tpch_parquet/region.parquet")
 
 
     def substrait(self, substrait_query, producer=None):
@@ -78,8 +58,6 @@ class DataFusionConsumer():
 
             times_obj = Times(times, timeAVG)
 
-            print(f"TEST DataFusion\t\tSUCCESS")
-
             if producer == 'Isthmus':
                 os.system("mv data/tpch_parquet/LINEITEM.parquet data/tpch_parquet/lineitem.parquet")
                 os.system("mv data/tpch_parquet/CUSTOMER.parquet data/tpch_parquet/customer.parquet")
@@ -105,7 +83,7 @@ class DataFusionConsumer():
                 os.system("mv data/tpch_parquet/ORDERS.parquet data/tpch_parquet/orders.parquet")
                 os.system("mv data/tpch_parquet/REGION.parquet data/tpch_parquet/region.parquet")
 
-            return None, None
+            return None, e
 
     def sql(self, sql_query):
         times = []
@@ -123,10 +101,7 @@ class DataFusionConsumer():
 
             times_obj = Times(times, timeAVG)
 
-            print(f"TEST DataFusion\t\tSUCCESS")
-
             return query_result, times_obj
 
         except Exception as e:
-            print(f"TEST DataFusion\t\tEXCEPTION: SQL not working: {repr(e)[:100]}")
-            return None, None
+            return None, e

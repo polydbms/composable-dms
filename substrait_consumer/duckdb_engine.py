@@ -27,15 +27,13 @@ class DuckDBConsumer():
                 if (i == 1) | (i == 2) | (i == 3):
                     times.append(resCPU)
             timeAVG = (times[0] + times[1] + times[2]) / 3
-            times_obj = Times(times, timeAVG)
 
-            print(f"TEST DuckDB\t\tSUCCESS")
+            times_obj = Times(times, timeAVG)
 
             return query_result, times_obj
 
         except Exception as e:
-            print(f"TEST DuckDB\t\tEXCEPTION: Substrait not working: {repr(e)}")
-            return None, None
+            return None, e
 
     def sql(self, sql_query):
         times = []
@@ -51,13 +49,10 @@ class DuckDBConsumer():
 
             times_obj = Times(times, timeAVG)
 
-            print(f"TEST DuckDB\t\tSUCCESS")
-
             return query_result, times_obj
 
         except Exception as e:
-            print(f"TEST DuckDB\t\tEXCEPTION: SQL not working: {repr(e)}")
-            return None, None
+            return None, e
 
     def print_db(self):
         self.db_connection.sql("SELECT * FROM information_schema.tables").show()

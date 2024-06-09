@@ -13,7 +13,9 @@ class CompoDB:
         self.duckdb_eng = False
         self.datafusion_eng = False
         self.acero_eng = False
-        print("\n> Creating the CompoDB components ..\n")
+
+        print("\n> Creating the CompoDB components ..\n>")
+
         for comp in compiler:
             if comp == 'Ibis':
                 self.ibis_comp = True
