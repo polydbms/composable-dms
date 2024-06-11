@@ -37,6 +37,8 @@ class DataFusionConsumer():
         times = []
 
         try:
+            os.system("cd data/tpch_parquet/")
+            os.system("ls -lh")
             for i in range(4):
                 stCPU = time.time()
                 substrait_json = json.loads(substrait_query)
