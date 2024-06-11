@@ -450,7 +450,9 @@ if __name__ == "__main__":
                 '''
         queries_created = True
         compodb.datafusion_engine.deregister_tables()
+        compodb.datafusion_engine.id()
         compodb.new_df_engine()
+        compodb.datafusion_engine.id()
 
     print("\n\n\nBenchmark is completed !\n\nThe exported Benchmark results can be found at your local repository in the folder benchmark_results\n")
 

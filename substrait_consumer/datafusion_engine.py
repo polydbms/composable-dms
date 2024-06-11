@@ -47,13 +47,14 @@ class DataFusionConsumer():
                     self.ctx, substrait_plan
                 )
                 result = asyncio.run(self.get(logical_plan))
+                print(result)
                 etCPU = time.time()
                 resCPU = (etCPU - stCPU) * 1000
                 if (i == 1) | (i == 2) | (i == 3):
                     times.append(resCPU)
             timeAVG = (times[0] + times[1] + times[2]) / 3
 
-            print(result)
+
 
             times_obj = Times(times, timeAVG)
 
