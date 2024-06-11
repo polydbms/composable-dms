@@ -37,7 +37,7 @@ class DataFusionConsumer():
 
         try:
             for i in range(4):
-                stCPU = time.process_time()
+                stCPU = time.time()
                 substrait_json = json.loads(substrait_query)
                 plan_proto = Parse(json.dumps(substrait_json), Plan())
                 plan_bytes = plan_proto.SerializeToString()
@@ -46,14 +46,13 @@ class DataFusionConsumer():
                     self.ctx, substrait_plan
                 )
                 df_result = self.ctx.create_dataframe_from_logical_plan(logical_plan)
-                etCPU = time.process_time()
+                etCPU = time.time()
                 resCPU = (etCPU - stCPU) * 1000
                 if (i == 1) | (i == 2) | (i == 3):
                     times.append(resCPU)
             timeAVG = (times[0] + times[1] + times[2]) / 3
 
-            if (q == 'q15.sql') or ('q17.sql'):
-                print(df_result)
+            print(df_result)
 
             times_obj = Times(times, timeAVG)
 

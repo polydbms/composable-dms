@@ -54,6 +54,10 @@ class DuckDBConsumer():
         self.db_connection.sql("SELECT * FROM information_schema.tables").show()
 
     def register_views(self):
+        stCPU = time.process_time()
         for table in os.listdir("/data/tpch_parquet/"):
             if table.endswith(".parquet"):
                 self.db_connection.execute(f"CREATE VIEW {table.split('.')[0]} AS SELECT * FROM read_parquet('/data/tpch_parquet/{table}')")
+        etCPU = time.process_time()
+        resCPU = (etCPU - stCPU) * 1000
+        print(f"Registering Views for DuckDB took {resCPU} ms")
