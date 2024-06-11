@@ -21,7 +21,7 @@ class DataFusionConsumer():
         self.ctx = SessionContext()
 
 
-    def substrait(self, substrait_query, producer=None):
+    def substrait(self, substrait_query, q, producer=None):
 
         if producer == 'Isthmus':
             os.system("mv data/tpch_parquet/lineitem.parquet data/tpch_parquet/LINEITEM.parquet")
@@ -52,6 +52,9 @@ class DataFusionConsumer():
                     times.append(resCPU)
             timeAVG = (times[0] + times[1] + times[2]) / 3
 
+            if (q == 'q15.sql') or ('q17.sql'):
+                print(df_result.to_arrow_table())
+
             times_obj = Times(times, timeAVG)
 
             if producer == 'Isthmus':
@@ -63,8 +66,6 @@ class DataFusionConsumer():
                 os.system("mv data/tpch_parquet/SUPPLIER.parquet data/tpch_parquet/supplier.parquet")
                 os.system("mv data/tpch_parquet/ORDERS.parquet data/tpch_parquet/orders.parquet")
                 os.system("mv data/tpch_parquet/REGION.parquet data/tpch_parquet/region.parquet")
-
-            #print(df_result.to_arrow_table())
 
             return df_result.to_arrow_table(), times_obj
 

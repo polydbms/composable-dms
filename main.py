@@ -192,7 +192,7 @@ if __name__ == "__main__":
 
                 # Run the queries
                 # Execute on DuckDBs Engine
-
+                '''
                 if compodb.duckdb_eng:
                     print("\n\tRUN DuckDB Engine\n")
                     if compodb.duckdb_opt:
@@ -280,7 +280,7 @@ if __name__ == "__main__":
                         results.append(result)
                     else:
                         print(f"TEST SQL Query\t\t\tEXCEPTION  SQL not working: {repr(benchmark)[:100]}")
-
+                '''
                 # Execute on DataFusions Engine
 
                 if compodb.datafusion_eng:
@@ -289,7 +289,7 @@ if __name__ == "__main__":
                         if compodb.duckdb_opt:
                             try:
                                 query_result, benchmark = compodb.datafusion_engine.substrait(
-                                    substrait_queries[f"DuckDB_{query_set.split('_')[2]}_{q.split('.')[0]}"])
+                                    substrait_queries[f"DuckDB_{query_set.split('_')[2]}_{q.split('.')[0]}"], q)
                                 if query_result is not None:
                                     print(f"TEST DuckDB Query\t\tSUCCESS")
                                     result = TestResult("DuckDB", "DataFusion",
@@ -307,7 +307,7 @@ if __name__ == "__main__":
                         if compodb.datafusion_opt:
                             try:
                                 query_result, benchmark = compodb.datafusion_engine.substrait(
-                                    substrait_queries[f"DataFusion_{query_set.split('_')[2]}_{q.split('.')[0]}"])
+                                    substrait_queries[f"DataFusion_{query_set.split('_')[2]}_{q.split('.')[0]}"], q)
                                 if query_result is not None:
                                     print(f"TEST DataFusion Query\t\tSUCCESS")
                                     result = TestResult("DataFusion", "DataFusion",
@@ -325,7 +325,7 @@ if __name__ == "__main__":
                         if compodb.calcite_opt:
                             try:
                                 query_result, benchmark = compodb.datafusion_engine.substrait(
-                                    substrait_queries[f"Calcite_{query_set.split('_')[2]}_{q.split('.')[0]}"], 'Isthmus')
+                                    substrait_queries[f"Calcite_{query_set.split('_')[2]}_{q.split('.')[0]}"], q, 'Isthmus')
                                 if query_result is not None:
                                     print(f"TEST Calcite Query\t\tSUCCESS")
                                     result = TestResult("Calcite", "DataFusion",
@@ -343,7 +343,7 @@ if __name__ == "__main__":
                         if compodb.ibis_comp:
                             try:
                                 query_result, benchmark = compodb.datafusion_engine.substrait(
-                                    substrait_queries[f"Ibis_{query_set.split('_')[2]}_{q.split('.')[0]}"])
+                                    substrait_queries[f"Ibis_{query_set.split('_')[2]}_{q.split('.')[0]}"], q)
                                 if query_result is not None:
                                     print(f"TEST Ibis Query\t\t\tSUCCESS")
                                     result = TestResult("Ibis", "DataFusion",
@@ -373,7 +373,7 @@ if __name__ == "__main__":
                             print(f"TEST SQL Query\t\t\tEXCEPTION  SQL not working: {repr(benchmark)[:100]}")
 
                 # Execute on Aceros Engine
-
+                '''
                 if compodb.acero_eng:
                     print("\n\tRUN Acero Engine\n")
                     if compodb.duckdb_opt:
@@ -447,7 +447,7 @@ if __name__ == "__main__":
                                 print(f"TEST Ibis Query\t\t\tEXCEPTION  Substrait not working: {repr(benchmark)[:100]}")
                         except KeyError:
                             pass
-
+                '''
         queries_created = True
         compodb.datafusion_engine.deregister_tables()
 
