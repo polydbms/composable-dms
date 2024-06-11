@@ -154,10 +154,10 @@ if __name__ == "__main__":
         # Register Tables with DataFusion
         if not init_data:
             compodb.datafusion_optimizer.register_tables()
-            compodb.datafusion_engine.register_tables()
             compodb.duckdb_engine.register_views()
             compodb.acero_engine.register_tables()
             init_data = True
+        compodb.datafusion_engine.register_tables()
 
         #query_set = input("Enter query set (tpch_sql_original | tpch_sql_reduced): ")
 
@@ -449,6 +449,7 @@ if __name__ == "__main__":
                             pass
 
         queries_created = True
+        compodb.datafusion_engine.deregister_tables()
 
     print("\n\n\nBenchmark is completed !\n\nThe exported Benchmark results can be found at your local repository in the folder benchmark_results\n")
 

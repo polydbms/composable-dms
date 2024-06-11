@@ -21,7 +21,6 @@ class DataFusionConsumer():
         self.ctx = SessionContext()
 
 
-
     def substrait(self, substrait_query, producer=None):
 
         if producer == 'Isthmus':
@@ -65,6 +64,8 @@ class DataFusionConsumer():
                 os.system("mv data/tpch_parquet/ORDERS.parquet data/tpch_parquet/orders.parquet")
                 os.system("mv data/tpch_parquet/REGION.parquet data/tpch_parquet/region.parquet")
 
+            #print(df_result.to_arrow_table())
+
             return df_result.to_arrow_table(), times_obj
 
         except Exception as e:
@@ -103,6 +104,15 @@ class DataFusionConsumer():
             return None, e
 
     def register_tables(self):
+        stCPU = time.process_time()
         for table in os.listdir("/data/tpch_parquet/"):
             if table.endswith(".parquet"):
                 self.ctx.register_parquet(f"{table.split('.')[0]}", f"/data/tpch_parquet/{table}")
+        etCPU = time.process_time()
+        resCPU = (etCPU - stCPU) * 1000
+        print(f"Registering Tables took {resCPU} ms")
+
+    def deregister_tables(self):
+        for table in os.listdir("/data/tpch_parquet/"):
+            if table.endswith(".parquet"):
+                self.ctx.deregister_table(f"{table.split('.')[0]}")
