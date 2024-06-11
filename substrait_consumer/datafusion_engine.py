@@ -38,6 +38,7 @@ class DataFusionConsumer():
 
         try:
             os.system("ls -lh /data/tpch_parquet/")
+            os.system("ls -lh /data/tpch_csv/")
             for i in range(4):
                 stCPU = time.time()
                 substrait_json = json.loads(substrait_query)
@@ -48,7 +49,7 @@ class DataFusionConsumer():
                     self.ctx, substrait_plan
                 )
                 result = asyncio.run(self.get(logical_plan))
-                print(result)
+                q_result = result
                 etCPU = time.time()
                 resCPU = (etCPU - stCPU) * 1000
                 if (i == 1) | (i == 2) | (i == 3):
@@ -69,7 +70,7 @@ class DataFusionConsumer():
                 os.system("mv data/tpch_parquet/ORDERS.parquet data/tpch_parquet/orders.parquet")
                 os.system("mv data/tpch_parquet/REGION.parquet data/tpch_parquet/region.parquet")
 
-            return result.to_arrow_table(), times_obj
+            return q_result.to_arrow_table(), times_obj
 
         except Exception as e:
 
