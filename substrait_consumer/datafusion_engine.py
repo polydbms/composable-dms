@@ -53,7 +53,7 @@ class DataFusionConsumer():
             timeAVG = (times[0] + times[1] + times[2]) / 3
 
             if (q == 'q15.sql') or ('q17.sql'):
-                print(df_result.to_arrow_table())
+                print(df_result)
 
             times_obj = Times(times, timeAVG)
 
