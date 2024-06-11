@@ -204,7 +204,7 @@ if __name__ == "__main__":
 
                 # Run the queries
                 # Execute on DuckDBs Engine
-                '''
+
                 if compodb.duckdb_eng:
                     print("\n\tRUN DuckDB Engine\n")
                     if compodb.duckdb_opt:
@@ -292,7 +292,7 @@ if __name__ == "__main__":
                         results.append(result)
                     else:
                         print(f"TEST SQL Query\t\t\tEXCEPTION  SQL not working: {repr(benchmark)[:100]}")
-                '''
+
                 # Execute on DataFusions Engine
 
                 if compodb.datafusion_eng:

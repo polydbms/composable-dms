@@ -48,8 +48,8 @@ class DataFusionConsumer():
                 logical_plan = ds.substrait.consumer.from_substrait_plan(
                     self.ctx, substrait_plan
                 )
-                result = asyncio.run(self.get(logical_plan))
-                q_result = result
+                result = self.ctx.create_dataframe_from_logical_plan(logical_plan)
+                print(result)
                 etCPU = time.time()
                 resCPU = (etCPU - stCPU) * 1000
                 if (i == 1) | (i == 2) | (i == 3):
@@ -70,7 +70,7 @@ class DataFusionConsumer():
                 os.system("mv data/tpch_parquet/ORDERS.parquet data/tpch_parquet/orders.parquet")
                 os.system("mv data/tpch_parquet/REGION.parquet data/tpch_parquet/region.parquet")
 
-            return q_result.to_arrow_table(), times_obj
+            return result.to_arrow_table(), times_obj
 
         except Exception as e:
 
