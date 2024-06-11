@@ -46,14 +46,14 @@ class DataFusionConsumer():
                 logical_plan = ds.substrait.consumer.from_substrait_plan(
                     self.ctx, substrait_plan
                 )
-                df_result = self.ctx.execute_logical_plan(logical_plan)
+                result = asyncio.run(self.get(logical_plan))
                 etCPU = time.time()
                 resCPU = (etCPU - stCPU) * 1000
                 if (i == 1) | (i == 2) | (i == 3):
                     times.append(resCPU)
             timeAVG = (times[0] + times[1] + times[2]) / 3
 
-            print(df_result)
+            print(result)
 
             times_obj = Times(times, timeAVG)
 
@@ -67,7 +67,7 @@ class DataFusionConsumer():
                 os.system("mv data/tpch_parquet/ORDERS.parquet data/tpch_parquet/orders.parquet")
                 os.system("mv data/tpch_parquet/REGION.parquet data/tpch_parquet/region.parquet")
 
-            return df_result.to_arrow_table(), times_obj
+            return result.to_arrow_table(), times_obj
 
         except Exception as e:
 
@@ -119,8 +119,9 @@ class DataFusionConsumer():
                 self.ctx.deregister_table(f"{table.split('.')[0]}")
 
 
-    #async def get_df():
-    #    return 2 + 2
-#
-    #async def get():
-    #    return await coro_function()
+    async def get_df(self, lp):
+        df_result = self.ctx.create_dataframe_from_logical_plan(lp)
+        return df_result
+
+    async def get(self, lp):
+        return await self.get_df(lp)
