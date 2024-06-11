@@ -46,7 +46,7 @@ class DataFusionConsumer():
                 logical_plan = ds.substrait.consumer.from_substrait_plan(
                     self.ctx, substrait_plan
                 )
-                df_result = asyncio.run(self.ctx.create_dataframe_from_logical_plan(logical_plan))
+                df_result = self.ctx.execute_logical_plan(logical_plan)
                 etCPU = time.time()
                 resCPU = (etCPU - stCPU) * 1000
                 if (i == 1) | (i == 2) | (i == 3):
@@ -117,3 +117,10 @@ class DataFusionConsumer():
         for table in os.listdir("/data/tpch_parquet/"):
             if table.endswith(".parquet"):
                 self.ctx.deregister_table(f"{table.split('.')[0]}")
+
+
+    #async def get_df():
+    #    return 2 + 2
+#
+    #async def get():
+    #    return await coro_function()
