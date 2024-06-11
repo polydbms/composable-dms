@@ -50,4 +50,7 @@ class CompoDB:
                 self.acero_engine = acero_engine.AceroConsumer()
                 print("> Acero engine created")
 
+    def new_df_engine(self):
+        self.datafusion_engine = datafusion_engine.DataFusionConsumer()
+
 
