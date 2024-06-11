@@ -35,9 +35,9 @@ class DuckDBConsumer():
         times = []
         try:
             for i in range(4):
-                stCPU = time.process_time()
+                stCPU = time.time()
                 query_result = self.db_connection.sql(sql_query)
-                etCPU = time.process_time()
+                etCPU = time.time()
                 resCPU = (etCPU - stCPU) * 1000
                 if (i == 1) | (i == 2) | (i == 3):
                     times.append(resCPU)

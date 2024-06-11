@@ -5,6 +5,7 @@ from test_result import TestResult
 import string
 from pathlib import Path
 from typing import Iterable
+import asyncio
 
 import pyarrow as pa
 from datafusion import SessionContext
@@ -45,7 +46,7 @@ class DataFusionConsumer():
                 logical_plan = ds.substrait.consumer.from_substrait_plan(
                     self.ctx, substrait_plan
                 )
-                df_result = self.ctx.create_dataframe_from_logical_plan(logical_plan)
+                df_result = asyncio.run(self.ctx.create_dataframe_from_logical_plan(logical_plan))
                 etCPU = time.time()
                 resCPU = (etCPU - stCPU) * 1000
                 if (i == 1) | (i == 2) | (i == 3):
