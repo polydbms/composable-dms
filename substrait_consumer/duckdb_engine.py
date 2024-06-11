@@ -18,10 +18,10 @@ class DuckDBConsumer():
             for i in range(4):
                 stCPU = time.process_time()
                 query_result = self.db_connection.from_substrait_json(substrait_query)
-                time.sleep(1)
-                print(query_result)
+                #time.sleep(1)
+                #print(query_result)
                 etCPU = time.process_time()
-                resCPU = (etCPU - stCPU -1) * 1000
+                resCPU = (etCPU - stCPU) * 1000
                 if (i == 1) | (i == 2) | (i == 3):
                     times.append(resCPU)
             timeAVG = (times[0] + times[1] + times[2]) / 3
