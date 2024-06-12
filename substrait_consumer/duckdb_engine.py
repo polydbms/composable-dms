@@ -18,6 +18,12 @@ class DuckDBConsumer():
             for i in range(4):
                 stCPU = time.process_time()
                 query_result = self.db_connection.from_substrait_json(substrait_query)
+                while True:
+                    try:
+                        print(query_result)
+                        break
+                    except Exception as e:
+                        print(f"DuckDB waiting: {repr(e)}")
                 #time.sleep(1)
                 #print(query_result)
                 etCPU = time.process_time()
