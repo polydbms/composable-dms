@@ -91,7 +91,7 @@ class DataFusionConsumer():
                 stCPU = time.process_time()
 
                 query_result = self.ctx.sql(sql_query)
-
+                print(query_result)
                 etCPU = time.process_time()
                 resCPU = (etCPU - stCPU) * 1000
                 if (i == 1) | (i == 2) | (i == 3):
