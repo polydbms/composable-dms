@@ -385,7 +385,7 @@ if __name__ == "__main__":
                             print(f"TEST SQL Query\t\t\tEXCEPTION  SQL not working: {repr(benchmark)[:100]}")
 
                 # Execute on Aceros Engine
-                '''
+
                 if compodb.acero_eng:
                     print("\n\tRUN Acero Engine\n")
                     if compodb.duckdb_opt:
@@ -459,7 +459,7 @@ if __name__ == "__main__":
                                 print(f"TEST Ibis Query\t\t\tEXCEPTION  Substrait not working: {repr(benchmark)[:100]}")
                         except KeyError:
                             pass
-                '''
+
         queries_created = True
         compodb.datafusion_engine.deregister_tables()
         compodb.new_df_engine()
