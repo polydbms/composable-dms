@@ -48,6 +48,7 @@ class DataFusionConsumer():
                 )
                 result = self.ctx.create_dataframe_from_logical_plan(logical_plan)
                 print(result)
+                print(result)
                 etCPU = time.time()
                 resCPU = (etCPU - stCPU) * 1000
                 if (i == 1) | (i == 2) | (i == 3):
