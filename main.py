@@ -35,26 +35,26 @@ def get_isthmus_schema():
 def create_tpch_data(scale_factor):
 
     # CSV data
-    data_path = Path(__file__).parent / "data" / "tpch_csv"
-    data_path.mkdir(parents=True, exist_ok=True)
-    lock_file = data_path / "data.json"
-    with FileLock(str(lock_file) + ".lock"):
-        con = duckdb.connect()
-        if str(scale_factor) == '100':
-            con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 0);")
-            con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 1);")
-            con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 2);")
-            con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 3);")
-            con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 4);")
-            con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 5);")
-            con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 6);")
-            con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 7);")
-            con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 8);")
-            con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 9);")
-        else:
-            con.execute(f"CALL dbgen(sf={scale_factor})")
-        con.execute(f"EXPORT DATABASE '{data_path}' (FORMAT CSV);")
-        con.close()
+    #data_path = Path(__file__).parent / "data" / "tpch_csv"
+    #data_path.mkdir(parents=True, exist_ok=True)
+    #lock_file = data_path / "data.json"
+    #with FileLock(str(lock_file) + ".lock"):
+    #    con = duckdb.connect()
+    #    if str(scale_factor) == '100':
+    #        con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 0);")
+    #        con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 1);")
+    #        con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 2);")
+    #        con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 3);")
+    #        con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 4);")
+    #        con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 5);")
+    #        con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 6);")
+    #        con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 7);")
+    #        con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 8);")
+    #        con.execute(f"CALL dbgen(sf={scale_factor}, children = 10, step = 9);")
+    #    else:
+    #        con.execute(f"CALL dbgen(sf={scale_factor})")
+    #    con.execute(f"EXPORT DATABASE '{data_path}' (FORMAT CSV);")
+    #    con.close()
 
     # PARQUET data
     data_path = Path(__file__).parent / "data" / "tpch_parquet"
