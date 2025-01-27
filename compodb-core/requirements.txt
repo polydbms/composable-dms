@@ -1,0 +1,16 @@
+datafusion==32.0.0
+duckdb==1.1
+filelock
+ibis-framework
+ibis-substrait
+JPype1
+protobuf
+--extra-index-url https://pypi.fury.io/arrow-nightlies --prefer-binary --pre
+pyarrow
+pytest
+pytest-snapshot
+pytest-xdist
+substrait
+python-dateutil
+polars-lts-cpu
+fastapi

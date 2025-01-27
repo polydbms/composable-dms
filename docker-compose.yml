@@ -1,0 +1,33 @@
+version: "3.8"
+services:
+  frontend:
+    container_name: CompoDB-demoUI
+    build:
+      context: compodb-demoUI
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./compodb-demoUI:/app
+      - /app/node_modules
+    networks:
+      - app-network
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+
+  backend:
+    container_name: CompoDB-backend
+    restart: on-failure
+    build:
+      context: compodb-core
+    environment:
+      - SCALE_FACTOR=${SCALE_FACTOR}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./compodb-core:/app
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
