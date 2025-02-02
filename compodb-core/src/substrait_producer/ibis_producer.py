@@ -2,13 +2,13 @@ import duckdb
 import ibis
 import json
 import pathlib
-from src.substrait_producer.producer import Producer
+from src.substrait_producer.parser import Parser
 from tests.queries.tpch_ibis_original import q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14, q15, q16, q17, q18, q19, q20, q21, q22
 from google.protobuf import json_format
 from ibis_substrait.compiler.core import SubstraitCompiler
 from src.errors import ProductionError
 
-class IbisProducer(Producer):
+class IbisProducer(Parser):
 
     def __init__(self):
         self._db_connection = ibis.duckdb.connect()
@@ -19,7 +19,7 @@ class IbisProducer(Producer):
         self.json_plan_folder = project_root / 'tests' / 'queries' / 'tpch_ibis_json'
 
 
-    def produce_substrait(self, query) -> str:
+    def to_substrait(self, query) -> str:
         try:
             #ibis_expr = self.get_ibis_expr(query.split('.')[0])
             #compiler = SubstraitCompiler()

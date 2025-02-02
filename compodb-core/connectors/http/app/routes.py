@@ -11,7 +11,8 @@ router = APIRouter()
 logger = logging.getLogger()
 
 class CompoDB(BaseModel):
-    optimizer: str
+    parser: str
+    optimizer: List[str]
     executionEngine: str
 
 class Benchmark(BaseModel):
@@ -23,7 +24,9 @@ class Benchmark(BaseModel):
 @router.post("/new-compodb")
 async def new_compodb(compodb: CompoDB):
     try:
-        CDB(compodb.optimizer, compodb.executionEngine)
+        print("COMPODB")
+        print(compodb.dict())
+        CDB(compodb.parser, compodb.optimizer, compodb.executionEngine)
         logger.info(f"New compodb: {compodb}")
     except Exception as e:
         raise e
@@ -47,3 +50,9 @@ async def run_benchmark(benchmark: Benchmark):
     print(f"Input Format: {benchmark.inputFormat}")
 
     return {"message": "Benchmark ran successfully", "data": results_json}
+
+
+@router.post("/clear")
+async def clear():
+    CDB.clear_instances()
+    return {"message": "CompoDBs cleared successfully"}

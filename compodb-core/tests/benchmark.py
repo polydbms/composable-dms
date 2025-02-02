@@ -49,6 +49,8 @@ class Benchmark:
 
     @classmethod
     def run_benchmark(cls, queries: List[str], input_format) -> List[BenchmarkResult]:
+        cls.input_format = input_format
+        DBContext.input_format = input_format
         cls.results.clear()
         # Setup producer & consumers table references
         DBContext.register_tables(input_format)
@@ -58,21 +60,50 @@ class Benchmark:
 
         # Run Benchmark
         for compodb in CompoDB.get_compodb_instances():
-            if compodb.producer.get_name() == "Ibis":
+            # Parse to Substrait Plan
+            if compodb.parser.get_name() == "Ibis": # TODO Ibis ??
                 for query_name, query in cls.json_queries.items():
-                    benchmark_result = BenchmarkResult(compodb.producer.get_name(), compodb.consumer.get_name(),
-                                                       input_format, cls.scale_factor, query_name)
-
-                    # Produce Substrait Plan
+                    benchmark_result = BenchmarkResult(compodb.parser.get_name(), compodb.get_optimizer_names(),
+                                                       compodb.execution_engine.get_name(), input_format, cls.scale_factor)
                     substrait_plan = None
                     try:
-                        substrait_plan = compodb.producer.produce_substrait(query)
+                        substrait_plan = compodb.parser.to_substrait(query)
+                        benchmark_result.query_name = query_name
                         benchmark_result.substrait_query = substrait_plan
+                        cls.results.append(benchmark_result)
                     except SubstraitError as e:
-                        print(e[0:100]) # TODO: remove
+                        logger.info("PROD " + compodb.parser.get_name() +" "+ query_name + ": " + str(e)[:180]) # TODO: remove
+                        benchmark_result.query_name = query_name
                         benchmark_result.add_failure(f"Substrait production failed for {query_name}: {repr(e)}")
                         cls.results.append(benchmark_result)
                         continue
+            else:
+                for query_name, query in cls.sql_queries.items():
+                    benchmark_result = BenchmarkResult(compodb.parser.get_name(), compodb.get_optimizer_names(),
+                                                       compodb.execution_engine.get_name(), input_format, cls.scale_factor)
+                    substrait_plan = None
+                    try:
+                        substrait_plan = compodb.parser.to_substrait(query)
+                        benchmark_result.query_name = query_name
+                        benchmark_result.substrait_query = substrait_plan
+                        cls.results.append(benchmark_result)
+                    except SubstraitError as e:
+                        logger.info("PROD " + compodb.parser.get_name() +" "+ query_name + ": " + str(e)[:180])  # TODO: remove
+                        benchmark_result.query_name = query_name
+                        benchmark_result.add_failure(f"Substrait production failed for {query_name}: {repr(e)}")
+                        cls.results.append(benchmark_result)
+                        continue
+
+
+            for benchmark in cls.results:
+                if benchmark.parser_name == "Calcite" and benchmark.execution_engine_name == "DataFusion" and benchmark.query_name == "q17":
+                    benchmark.error_msg = "PanicException: Q17 not supported"
+                if benchmark.error_msg is None:
+
+                    # Optimize Substrait Plan
+                    if compodb.optimizer:
+                        for opt in compodb.optimizer:
+                            benchmark.substrait_query = opt.optimize_substrait(benchmark.substrait_query)
 
                     # Run Substrait & Measure
                     times = []
@@ -80,60 +111,19 @@ class Benchmark:
                     try:
                         for i in range(4):
                             stCPU = time.process_time()
-                            query_result = compodb.consumer.run_substrait(substrait_plan)
+                            query_result = compodb.execution_engine.run_substrait(benchmark.substrait_query)
                             etCPU = time.process_time()
                             resCPU = (etCPU - stCPU) * 1000
                             if  (i == 1) | (i == 2) | (i == 3):
                                 times.append(resCPU)
                         timeAVG = (times[0] + times[1] + times[2]) / 3
-                        benchmark_result.measurements = times
-                        #benchmark_result.query_result = query_result
-                        benchmark_result.runtime = timeAVG
+                        benchmark.measurements = times
+                        #benchmark.query_result = query_result
+                        benchmark.runtime = timeAVG
                     except SubstraitError as e:
-                        print(e[0:100]) # TODO: remove
-                        benchmark_result.add_failure(f"Substrait execution failed for {query_name}: {repr(e)}")
-                        cls.results.append(benchmark_result)
+                        logger.info("EXEC " + compodb.parser.get_name() + " " + compodb.execution_engine.get_name() + " " + benchmark.query_name + ": " + str(e)) # TODO: remove
+                        benchmark.add_failure(f"Substrait execution failed for {benchmark.query_name}: {repr(e)}")
                         continue
-
-                    cls.results.append(benchmark_result)
-            else:
-                for query_name, query in cls.sql_queries.items():
-                    benchmark_result = BenchmarkResult(compodb.producer.get_name(), compodb.consumer.get_name(),
-                                                       input_format, cls.scale_factor, query_name)
-
-                    # Produce Substrait Plan
-                    substrait_plan = None
-                    try:
-                        substrait_plan = compodb.producer.produce_substrait(query)
-                        benchmark_result.substrait_query = substrait_plan
-                    except SubstraitError as e:
-                        print(e)  # TODO: remove
-                        benchmark_result.add_failure(f"Substrait production failed for {query_name}: {repr(e)}")
-                        cls.results.append(benchmark_result)
-                        continue
-
-                    # Run Substrait & Benchmark
-                    times = []
-                    query_result = None
-                    try:
-                        for i in range(4):
-                            stCPU = time.process_time()
-                            query_result = compodb.consumer.run_substrait(substrait_plan)
-                            etCPU = time.process_time()
-                            resCPU = (etCPU - stCPU) * 1000
-                            if (i == 1) | (i == 2) | (i == 3):
-                                times.append(resCPU)
-                        timeAVG = (times[0] + times[1] + times[2]) / 3
-                        benchmark_result.measurements = times
-                        #benchmark_result.query_result = query_result
-                        benchmark_result.runtime = timeAVG
-                    except SubstraitError as e:
-                        print(e)  # TODO: remove
-                        benchmark_result.add_failure(f"Substrait execution failed for {query_name}: {repr(e)}")
-                        cls.results.append(benchmark_result)
-                        continue
-
-                    cls.results.append(benchmark_result)
 
         # DBContext.deregister_tables() # TODO: Needed ?
 

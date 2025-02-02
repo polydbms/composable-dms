@@ -1,7 +1,7 @@
 #import pyvelox.pyvelox as pv
 
 
-class VeloxConsumer():
+class VeloxEngine():
 
     def __init__(self, db_connection=None):
         times=[]

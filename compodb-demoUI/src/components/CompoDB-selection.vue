@@ -3,19 +3,41 @@ export default {
   name: "CompoDB-selection",
   data() {
     return {
-      optimizer: '',
+      parser: '',
+      optimizer: [],
+      tempOptimizers: [],
       executionEngine: '',
       queries: [],
-      inputFormat: '',
+      inputFormat: 'parquet',
+      query_set_tpch: [
+        'tpch-q1', 'tpch-q2', 'tpch-q3', 'tpch-q4', 'tpch-q5', 'tpch-q6',
+        'tpch-q7', 'tpch-q8', 'tpch-q9', 'tpch-q10', 'tpch-q11', 'tpch-q12',
+        'tpch-q13', 'tpch-q14', 'tpch-q15', 'tpch-q16', 'tpch-q17', 'tpch-q18',
+        'tpch-q19', 'tpch-q20', 'tpch-q21', 'tpch-q22'
+      ],
+      selectAll: false,
     };
   },
+  watch: {
+    queries(newQueries) {
+      // Emit the update-queries event when the queries array changes
+      this.$emit("update-queries", newQueries);
+    }
+  },
   methods: {
+    addOptimizer() {
+      this.tempOptimizers.push('');
+    },
+    removeOptimizer(index) {
+      this.tempOptimizers.splice(index, 1);
+    },
     async submitForm(event) {
       this.$emit("show-loading");
       event.preventDefault();
 
       const formData = {
-        optimizer: this.optimizer,
+        parser: this.parser,
+        optimizer: [...this.tempOptimizers],
         executionEngine: this.executionEngine,
       };
 
@@ -30,7 +52,7 @@ export default {
 
         if (response.ok) {
           const data = await response.json();
-          this.$emit("new-composition", formData.optimizer, formData.executionEngine);
+          this.$emit("new-composition", formData.parser, formData.optimizer, formData.executionEngine);
         } else {
           console.error('Error submitting form:', response.statusText);
         }
@@ -43,10 +65,12 @@ export default {
     },
 
     resetState() {
-      this.optimizer = '';
+      this.parser = '';
+      this.optimizer = [];
       this.executionEngine = '';
       this.queries = [];
-      this.inputFormat = '';
+      this.inputFormat = 'parquet';
+      this.selectAll = false;
 
       const checkboxes = document.querySelectorAll('.query-options input[type="checkbox"]');
       checkboxes.forEach(checkbox => checkbox.checked = false);
@@ -58,14 +82,9 @@ export default {
       this.$emit("update-queries", []);
       this.$emit("update-input-format", '');
     },
-
-    handleQueryChange(event) {
-      const queryValue = event.target.value;
-      if (event.target.checked) {
-        this.queries.push(queryValue);
-      } else {
-        this.queries = this.queries.filter(query => query !== queryValue);
-      }
+    toggleAll() {
+      this.selectAll = !this.selectAll;
+      this.queries = this.selectAll ? [...this.query_set_tpch] : [];
       this.$emit("update-queries", this.queries);
     },
 
@@ -81,21 +100,40 @@ export default {
     <h2>Add System Composition</h2>
     <form @submit.prevent="submitForm">
 
-      <!-- Optimizer Selection -->
-      <label for="optimizer">Select Optimizer</label>
-      <select id="optimizer" v-model="optimizer" required>
-          <option value="calcite">Calcite Optimizer</option>
-          <option value="datafusion">DataFusion Optimizer</option>
-          <option value="duckdb">DuckDB Optimizer</option>
-          <option value="ibis">Ibis Compiler</option>
+      <!-- Parser Selection -->
+      <label for="parser">Select Parser</label>
+      <select id="parser" v-model="parser" required>
+          <option value="Calcite">Calcite</option>
+          <option value="DataFusion">DataFusion</option>
+          <option value="DuckDB">DuckDB</option>
+          <option value="Ibis">Ibis</option>
       </select>
+
+      <!-- Optimizer Selection -->
+      <div style="display: flex; align-items: center; gap: 11px;">
+        <label>Add Optimizer</label>
+        <button type="button" @click="addOptimizer" id="plus">
+          +
+        </button>
+      </div>
+
+      <div v-for="(opt, index) in tempOptimizers" :key="index" style="display: flex; align-items: center; gap: 3px;">
+        <select v-model="tempOptimizers[index]" required>
+          <option value="Calcite">Calcite Optimizer</option>
+          <option value="DataFusion">DataFusion Optimizer</option>
+          <option value="DuckDB">DuckDB Optimizer</option>
+        </select>
+        <button type="button" @click="removeOptimizer(index)" id="minus">
+          -
+        </button>
+      </div>
 
       <!-- Execution Engine Selection -->
       <label for="execution-engine">Select Execution Engine</label>
       <select id="execution-engine" v-model="executionEngine" required>
-          <option value="duckdb">DuckDB Engine</option>
-          <option value="datafusion">DataFusion Engine</option>
-          <option value="acero">Acero Engine</option>
+          <option value="DuckDB">DuckDB Engine</option>
+          <option value="DataFusion">DataFusion Engine</option>
+          <option value="Acero">Acero Engine</option>
       </select>
 
       <!-- Submit Button -->
@@ -103,73 +141,16 @@ export default {
     </form>
 
     <!-- Query Selection -->
-    <label>Query Selection</label>
+    <div class="query-selection">
+        <label id="selection-label">Query Selection</label>
+        <button @click="toggleAll" class="select-all-btn">{{ selectAll ? 'Deselect All' : 'Select All' }}</button>
+    </div>
     <div class="query-options">
-        <input type="checkbox" id="tpch-q1" value="tpch-q1" @change="handleQueryChange"/>
-        <label for="tpch-q1">TPC-H Q1</label>
-
-        <input type="checkbox" id="tpch-q2" value="tpch-q2" @change="handleQueryChange"/>
-        <label for="tpch-q2">TPC-H Q2</label>
-
-        <input type="checkbox" id="tpch-q3" value="tpch-q3" @change="handleQueryChange"/>
-        <label for="tpch-q3">TPC-H Q3</label>
-
-        <input type="checkbox" id="tpch-q4" value="tpch-q4" @change="handleQueryChange"/>
-        <label for="tpch-q4">TPC-H Q4</label>
-
-        <input type="checkbox" id="tpch-q5" value="tpch-q5" @change="handleQueryChange"/>
-        <label for="tpch-q5">TPC-H Q5</label>
-
-        <input type="checkbox" id="tpch-q6" value="tpch-q6" @change="handleQueryChange"/>
-        <label for="tpch-q6">TPC-H Q6</label>
-
-        <input type="checkbox" id="tpch-q7" value="tpch-q7" @change="handleQueryChange"/>
-        <label for="tpch-q7">TPC-H Q7</label>
-
-        <input type="checkbox" id="tpch-q8" value="tpch-q8" @change="handleQueryChange"/>
-        <label for="tpch-q8">TPC-H Q8</label>
-
-        <input type="checkbox" id="tpch-q9" value="tpch-q9" @change="handleQueryChange"/>
-        <label for="tpch-q9">TPC-H Q9</label>
-
-        <input type="checkbox" id="tpch-q10" value="tpch-q10" @change="handleQueryChange"/>
-        <label for="tpch-q10">TPC-H Q10</label>
-
-        <input type="checkbox" id="tpch-q11" value="tpch-q11" @change="handleQueryChange"/>
-        <label for="tpch-q11">TPC-H Q11</label>
-
-        <input type="checkbox" id="tpch-q12" value="tpch-q12" @change="handleQueryChange"/>
-        <label for="tpch-q12">TPC-H Q12</label>
-
-        <input type="checkbox" id="tpch-q13" value="tpch-q13" @change="handleQueryChange"/>
-        <label for="tpch-q13">TPC-H Q13</label>
-
-        <input type="checkbox" id="tpch-q14" value="tpch-q14" @change="handleQueryChange"/>
-        <label for="tpch-q14">TPC-H Q14</label>
-
-        <input type="checkbox" id="tpch-q15" value="tpch-q15" @change="handleQueryChange"/>
-        <label for="tpch-q15">TPC-H Q15</label>
-
-        <input type="checkbox" id="tpch-q16" value="tpch-q16" @change="handleQueryChange"/>
-        <label for="tpch-q16">TPC-H Q16</label>
-
-        <input type="checkbox" id="tpch-q17" value="tpch-q17" @change="handleQueryChange"/>
-        <label for="tpch-q17">TPC-H Q17</label>
-
-        <input type="checkbox" id="tpch-q18" value="tpch-q18" @change="handleQueryChange"/>
-        <label for="tpch-q18">TPC-H Q18</label>
-
-        <input type="checkbox" id="tpch-q19" value="tpch-q19" @change="handleQueryChange"/>
-        <label for="tpch-q19">TPC-H Q19</label>
-
-        <input type="checkbox" id="tpch-q20" value="tpch-q20" @change="handleQueryChange"/>
-        <label for="tpch-q20">TPC-H Q20</label>
-
-        <input type="checkbox" id="tpch-q21" value="tpch-q21" @change="handleQueryChange"/>
-        <label for="tpch-q21">TPC-H Q21</label>
-
-        <input type="checkbox" id="tpch-q22" value="tpch-q22" @change="handleQueryChange"/>
-        <label for="tpch-q22">TPC-H Q22</label>
+        <!-- Select All Checkbox -->
+        <div v-for="query in query_set_tpch" :key="query">
+            <input type="checkbox" :id="query" :value="query" v-model="queries" />
+            <label :for="query">{{ query.replace('tpch-q', 'TPC-H Q') }}</label>
+        </div>
     </div>
 
     <!-- Input Format -->
@@ -188,9 +169,43 @@ h2 {
 }
 label {
     display: block;
-    margin-top: 20px;
-    margin-bottom: 10px;
+    margin-top: 25px;
+    margin-bottom: 5px;
     font-size: 1.1em;
+}
+#plus {
+  width: 23px;
+  height: 23px;
+  padding: 0 0 3px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  border-radius: 6px;
+  margin-top: 20px;
+  margin-bottom: 0px;
+  background-color: darkgrey;
+}
+#plus:hover {
+  background-color: grey;
+}
+#minus {
+  width: 39px;
+  height: 39px;
+  padding: 0 0 4px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 25px;
+  font-stretch: expanded;
+  border-radius: 4px;
+  background-color: darkgrey;
+  margin-top: 6px;
+  margin-bottom: 1px;
+  border: 1px solid dimgrey;
+}
+#minus:hover {
+  background-color: grey;
 }
 button {
     width: 100%;
@@ -214,16 +229,15 @@ select {
 }
 .query-options {
     padding: 5px 8px;
-    border: 1px solid #ccc;
+    border: 1px solid #ddd;
     border-radius: 4px;
-    background-color: rgba(40, 40, 50, 1);
+    background-color: rgba(241, 244, 246, 0.8);
     max-height: 187px;
     overflow-y: auto;
 }
 .query-options label {
     display: block;
     font-size: 1em;
-    color: white;
     padding: 5px 10px;
     margin: 3px 0;
     border-radius: 4px;
@@ -237,7 +251,34 @@ select {
     display: none;
 }
 .query-options input[type="checkbox"]:checked + label {
-    background-color: #0056b3;
+    background-color: dimgrey;
     color: white;
+}
+.query-selection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+#selection-label {
+  margin-top: 30px;
+  margin-bottom: 0;
+}
+.select-all-btn {
+  background-color: darkgrey;
+  color: white;
+  font-size: smaller;
+  border: none;
+  padding: 4px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  width: 25%;
+  height: 25px;
+  margin-top: 35px;
+  margin-bottom: 5px;
+}
+.select-all-btn:hover {
+  background-color: grey;
 }
 </style>

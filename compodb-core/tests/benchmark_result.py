@@ -1,9 +1,11 @@
+from typing import List
 
 
 class BenchmarkResult:
 
-    producer_name: str = None
-    consumer_name: str = None
+    parser_name: str = None
+    optimizer: List[str] = []
+    execution_engine_name: str = None
     data_format: str = None
     scale_factor = None
     query_name: str = None
@@ -14,12 +16,12 @@ class BenchmarkResult:
     error_msg = None
 
 
-    def __init__(self, producer_name, consumer_name, data_format, scale_factor, query_name):
-        self.producer_name = producer_name
-        self.consumer_name = consumer_name
+    def __init__(self, parser_name, optimizer, execution_engine_name, data_format, scale_factor):
+        self.parser_name = parser_name
+        self.optimizer = optimizer
+        self.execution_engine_name = execution_engine_name
         self.data_format = data_format
         self.scale_factor = scale_factor
-        self.query_name = query_name
 
 
     def add_failure(self, e) -> None:
@@ -28,8 +30,9 @@ class BenchmarkResult:
 
     def json(self):
         return {
-            "producer_name": self.producer_name,
-            "consumer_name": self.consumer_name,
+            "parser_name": self.parser_name,
+            "optimizer": self.optimizer,
+            "execution_engine_name": self.execution_engine_name,
             "data_format": self.data_format,
             "scale_factor": self.scale_factor,
             "query_name": self.query_name,

@@ -13,6 +13,7 @@ class DBContext:
     parquet_path: str = ""
     csv_tables: List[str] = []
     parquet_tables: List[str] = []
+    input_format: str = None
 
     '''
     Registers a table reference (csv/parquet) with the current CompoDB instances
@@ -21,8 +22,11 @@ class DBContext:
     def register_table(cls, table: str) -> None:
         try:
             for compodb in CompoDB.get_compodb_instances():
-                compodb.producer.register_table(table)
-                compodb.consumer.register_table(table)
+                compodb.parser.register_table(table)
+                if compodb.optimizer:
+                    for opt in compodb.optimizer:
+                        opt.register_table(table)
+                compodb.execution_engine.register_table(table)
         except Exception as e:
             raise e
 

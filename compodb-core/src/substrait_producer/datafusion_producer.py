@@ -1,6 +1,7 @@
 import os
 import json
-from src.substrait_producer.producer import Producer
+from src.substrait_producer.parser import Parser
+from src.substrait_producer.optimizer import Optimizer
 import pyarrow as pa
 from datafusion import SessionContext
 from datafusion import substrait as ds
@@ -9,22 +10,27 @@ from google.protobuf.json_format import MessageToJson
 from src.errors import ProductionError
 
 
-class DataFusionProducer(Producer):
+class DataFusionProducer(Parser, Optimizer):
 
     def __init__(self):
         self.ctx = SessionContext()
 
 
-    def produce_substrait(self, query) -> str:
+    def to_substrait(self, native_query) -> str:
         try:
             substrait_proto = plan_pb2.Plan()
-            substrait_plan = ds.substrait.serde.serialize_to_plan(query, self.ctx)
+            substrait_plan = ds.serde.serialize_to_plan(native_query, self.ctx)
             substrait_plan_bytes = substrait_plan.encode()
             substrait_proto.ParseFromString(substrait_plan_bytes)
             return MessageToJson(substrait_proto)
 
         except Exception as e:
             raise ProductionError(repr(e))
+
+
+    def optimize_substrait(self, substrait_query: str) -> str:
+        return substrait_query
+
 
     def register_table(self, table: str) -> None:
         table_name = table.split('.')[0]  # Extract table name

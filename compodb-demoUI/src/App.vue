@@ -39,8 +39,8 @@ export default {
     };
   },
   methods: {
-    handleNewComposition(optimizer, executionEngine) {
-      this.$refs.overviewComponent.addCompoDB(optimizer, executionEngine);
+    handleNewComposition(parser, optimizer, executionEngine) {
+      this.$refs.overviewComponent.addCompoDB(parser, optimizer, executionEngine);
     },
     updateQueries(queries) {
       this.$refs.overviewComponent.updateQueries(queries);
@@ -66,7 +66,6 @@ export default {
     </div>
     <Grid>
       <div class="inner-grid" style="grid-column: 1 / 2;">
-        <CompoDB class="module"/>
         <CompoDBSelection class="module" ref="selectionComponent" @new-composition="handleNewComposition"
                                                                   @update-queries="updateQueries"
                                                                   @update-input-format="updateInputFormat"
@@ -74,13 +73,14 @@ export default {
                                                                   @hide-loading="hideLoading"/>
       </div>
       <div class="inner-grid" style="grid-column: 2 / 3;">
+        <CompoDB class="module"/>
         <CompoDBOverview class="module" ref="overviewComponent" @reset-selection="clear"
                                                                 @benchmark-update="handleBenchmarkResults"
                                                                 @show-loading="showLoading"
                                                                 @hide-loading="hideLoading"/>
       </div>
-      <div class="inner-grid" style="grid-column: 3 / 4;">
-        <CompoDBResults class="module" ref="resultsComponent"/>
+      <div class="inner-grid" style="grid-column: 3 / 6;">
+        <CompoDBResults class="module sub" ref="resultsComponent"/>
       </div>
     </Grid>
   </div>
@@ -88,10 +88,13 @@ export default {
 
 <style scoped>
 .module {
-  background-color: rgba(65, 65, 65, 0.8);
+  background-color: white;
   padding: 16px;
   border-radius: 8px;
-  border: 0.5px solid white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); /* Soft shadow */
+}
+.sub {
+  margin-top: 45px;
 }
 .inner-grid {
   display: grid;
@@ -118,7 +121,7 @@ export default {
   width: 60px;
   height: 60px;
   border: 6px solid rgba(255, 255, 255, 0.3);
-  border-top: 6px solid white;
+  border-top: 6px solid black;
   border-radius: 50%;
   animation: spin 1.5s linear infinite;
 }

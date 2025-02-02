@@ -9,19 +9,33 @@ export default {
     };
   },
   methods: {
-    addCompoDB(optimizer, executionEngine) {
+    addCompoDB(parser, optimizer, executionEngine) {
       const newCompoDB = {
+        parser: parser,
         optimizer: optimizer,
         executionEngine: executionEngine
       };
       this.compoDBs.push(newCompoDB);
     },
-    clear() {
-      // Clear the local & global state
+    async clear() {
       this.compoDBs = [];
       this.queries = [];
       this.inputFormat = '';
-      this.$emit('reset-selection');
+      try {
+        const response = await fetch('http://localhost:8000/clear', {
+          method: 'POST',
+        });
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Clear result:', data);
+        } else {
+          console.error('Error clearing data:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Network error:', error);
+      } finally {
+        this.$emit('reset-selection');
+      }
     },
     updateQueries(newQueries) {
       this.queries = newQueries;
@@ -66,7 +80,10 @@ export default {
 <div class="container">
     <h2>Selected Compositions</h2>
     <div v-for="(compoDB, index) in compoDBs" :key="index" class="composition">
-      <strong>Optimizer:</strong> {{ compoDB.optimizer }}<br>
+      <strong>Parser:</strong> {{ compoDB.parser }}<br>
+      <span v-if="compoDB.optimizer && compoDB.optimizer.length">
+        <strong>Optimizer:</strong> {{ compoDB.optimizer.join(', ') }}<br>
+      </span>
       <strong>Execution Engine:</strong> {{ compoDB.executionEngine }}
     </div>
     <div class="buttons">
@@ -86,15 +103,23 @@ h2 {
     border-radius: 8px;
     padding: 15px;
     margin-bottom: 15px;
-    background-color: rgba(40, 40, 50, 1);
+    background-color: rgba(241, 244, 246, 0.8);
 }
 .composition strong {
     margin-bottom: 5px;
 }
 .buttons {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 25px;
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Adds spacing between buttons */
+  width: 100%;
+}
+
+.buttons button {
+  width: 100%; /* Makes buttons span the full width */
+  padding: 12px; /* Adds some padding for better appearance */
+  text-align: center;
 }
 .button-primary {
     background-color: #007bff;
@@ -109,7 +134,7 @@ h2 {
     background-color: #0056b3;
 }
 .button-secondary {
-    background-color: #6c757d;
+    background-color: darkgrey;
     color: white;
     padding: 10px 25px;
     border: none;
@@ -118,6 +143,6 @@ h2 {
     font-size: 1em;
 }
 .button-secondary:hover {
-    background-color: #5a6268;
+    background-color: grey;
 }
 </style>

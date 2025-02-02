@@ -8,11 +8,11 @@ import pyarrow.substrait as substrait
 from pyarrow import Table
 import time
 from typing import Optional
-from src.substrait_consumer.consumer import Consumer
+from src.substrait_consumer.execution_engine import ExecutionEngine
 from src.errors import ConsumptionError
 
 
-class AceroConsumer(Consumer):
+class AceroEngine(ExecutionEngine):
 
     def __init__(self):
         self.tables = {}

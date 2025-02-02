@@ -6,7 +6,7 @@ export default {
 
 <template>
   <div class="container">
-    <img src="../assets/compodb-icon2.svg" alt="Icon" id="icon" />
+    <img src="../assets/compodb.png" alt="Icon" id="icon" />
     <h1 id="title">CompoDB</h1>
   </div>
 </template>
@@ -19,12 +19,11 @@ export default {
   gap: 12px;
 }
 #icon {
-  width: 40px;
-  height: 40px;
+  width: 55px;
+  height: 60px;
 }
 #title {
   font-size: 1.9rem;
-  color: white;
   margin: 0;
 }
 </style>

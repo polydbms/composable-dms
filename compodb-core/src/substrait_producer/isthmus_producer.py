@@ -1,26 +1,31 @@
 import json
 import jpype.imports
-from src.substrait_producer.producer import Producer
+from src.substrait_producer.parser import Parser
+from src.substrait_producer.optimizer import Optimizer
 import src.substrait_producer.java_definitions as java
 from com.google.protobuf.util import JsonFormat as json_formatter
 from src.errors import ProductionError
 import os
 
 
-class IsthmusProducer(Producer):
+class IsthmusProducer(Parser, Optimizer):
 
     def __init__(self):
         self.java_schema_list = None
 
-    def produce_substrait(self, query) -> str:
+    def to_substrait(self, native_query: str) -> str:
         try:
-            json_plan = self.produce_isthmus_substrait(query, self.java_schema_list)
+            json_plan = self.produce_isthmus_substrait(native_query, self.java_schema_list)
             python_json = json.loads(json_plan)
 
             return json.dumps(python_json, indent=2)
 
         except Exception as e:
             raise ProductionError(repr(e))
+
+
+    def optimize_substrait(self, substrait_query: str) -> str:
+        return substrait_query
 
 
     def get_isthmus_schema(self):
@@ -50,6 +55,9 @@ class IsthmusProducer(Producer):
         plan = sql_to_substrait.execute(java_sql_string, schema_list)
         json_plan = json_formatter.printer().print_(plan)
         return json_plan
+
+
+
 
 
     def register_table(self, table: str) -> None:

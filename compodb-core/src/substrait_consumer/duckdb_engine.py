@@ -3,20 +3,23 @@ import duckdb
 from duckdb import DuckDBPyRelation
 from typing import Optional
 import time
-from src.substrait_consumer.consumer import Consumer
+from src.substrait_consumer.execution_engine import ExecutionEngine
+from src.substrait_producer.isthmus_producer import IsthmusProducer
 from src.errors import ConsumptionError
 
 
-class DuckDBConsumer(Consumer):
+class DuckDBEngine(ExecutionEngine):
+
+
 
     def __init__(self):
         self.db_connection = duckdb.connect()
         self.db_connection.execute("INSTALL substrait")
         self.db_connection.execute("LOAD substrait")
-
+        self.input_format: str = None
 
     def run_substrait(self, substrait_query) -> Optional[DuckDBPyRelation]:
-
+        self.print_db()
         try:
             query_result = self.db_connection.from_substrait_json(substrait_query)
             return query_result
@@ -25,6 +28,14 @@ class DuckDBConsumer(Consumer):
             self.db_connection = duckdb.connect()
             self.db_connection.execute("INSTALL substrait")
             self.db_connection.execute("LOAD substrait")
+            if self.input_format == "csv":
+                for table in os.listdir("/data/csv"):
+                    if table.endswith(".csv"):
+                        self.register_table(table)
+            else:
+                for table in os.listdir("/data/parquet"):
+                    if table.endswith(".parquet"):
+                        self.register_table(table)
             raise ConsumptionError(repr(e))
 
 
@@ -51,7 +62,11 @@ class DuckDBConsumer(Consumer):
             return None
 
     def register_table(self, table: str):
+        _input_format = table.split('.')[1]
         view_name = table.split('.')[0]
+
+        if isinstance(self.compodb.parser, IsthmusProducer):
+            view_name = view_name.upper()
 
         self.db_connection.execute(f"DROP VIEW IF EXISTS {view_name}")
         if table.endswith(".parquet"):

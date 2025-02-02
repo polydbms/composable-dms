@@ -18,10 +18,12 @@ export default {
       this.updateChart([]);
     },
     updateChart(results) {
+      console.log("RESULTS:");
+      console.log(results);
       this.clearChart();
 
       const combinations = results.reduce((acc, item) => {
-        const combination = `${item.producer_name} + ${item.consumer_name}`;
+        const combination = `${item.parser_name} + ${item.execution_engine_name}`;
         if (!acc[combination]) {
           acc[combination] = [];
         }
@@ -38,7 +40,7 @@ export default {
           name: combination,
           type: 'bar',
           data: labels.map(label => {
-            const matchingItem = combinationData.find(d => d.query_name === label && `${d.producer_name} + ${d.consumer_name}` === combination);
+            const matchingItem = combinationData.find(d => d.query_name === label && `${d.parser_name} + ${d.execution_engine_name}` === combination);
             return matchingItem ? matchingItem.runtime : 0;
           }),
           color: `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.9)`,
@@ -50,20 +52,20 @@ export default {
           text: 'Benchmark Results (Runtime in ms)',
           left: 'center',
           textStyle: {
-            color: 'white',
+            color: 'black',
           },
         },
         tooltip: {
           trigger: 'axis',
           textStyle: {
-            color: 'white',
+            color: 'black',
           },
           backgroundColor: 'rgba(50, 50, 50, 0.8)',
         },
         legend: {
           top: '10%',
           textStyle: {
-            color: 'white',
+            color: 'black',
           },
           data: series.map(s => s.name),
         },
@@ -71,22 +73,22 @@ export default {
           type: 'category',
           data: labels,
           axisLabel: {
-            color: 'white',
+            color: 'black',
           },
           axisLine: {
             lineStyle: {
-              color: 'white',
+              color: 'black',
             },
           },
         },
         yAxis: {
           type: 'value',
           axisLabel: {
-            color: 'white',
+            color: 'black',
           },
           axisLine: {
             lineStyle: {
-              color: 'white',
+              color: 'black',
             },
           },
           splitLine: {
@@ -115,7 +117,7 @@ export default {
 <template>
   <div class="container">
     <h2>Performance Results</h2>
-    <div id="bar-chart" style="width: 100%; height: 400px;"></div>
+    <div id="bar-chart" style="width: 100%; height: 500px;"></div>
     <button @click="showSubstraitPlans">Visualize Query Plans</button>
   </div>
 </template>
