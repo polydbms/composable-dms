@@ -52,6 +52,8 @@ class Benchmark:
         cls.input_format = input_format
         DBContext.input_format = input_format
         cls.results.clear()
+        print("RESULTSLIST:")
+        print(cls.results)
         # Setup producer & consumers table references
         DBContext.register_tables(input_format)
 
@@ -125,8 +127,6 @@ class Benchmark:
                         benchmark.add_failure(f"Substrait execution failed for {benchmark.query_name}: {repr(e)}")
                         continue
 
-        # DBContext.deregister_tables() # TODO: Needed ?
-
         return cls.results
 
 
@@ -135,6 +135,7 @@ class Benchmark:
         current_file_path = pathlib.Path(__file__).resolve()
         json_query_folder = current_file_path.parent / 'queries' / 'tpch_ibis_json'
         sql_query_folder = current_file_path.parent / 'queries' / 'tpch_sql_original'
+        reduced_query_folder = current_file_path.parent / 'queries' / 'tpch_sql_reduced'
         cls.sql_queries = {}
         cls.json_queries = {}
         individual_count = 1
@@ -143,6 +144,8 @@ class Benchmark:
                 cls.sql_queries[query.split("-")[1]] = cls.get_tpch_query(f"{sql_query_folder}/{query.split('-')[1]}.sql")
                 json_query = cls.get_tpch_query(f"{json_query_folder}/{query.split('-')[1]}.json")
                 if json_query is not None: cls.json_queries[query.split("-")[1]] = json_query
+            elif query.startswith("reduced"):
+                cls.sql_queries[query.split("_")[2]] = cls.get_tpch_query(f"{reduced_query_folder}/{query.split('_')[2]}.sql")
             else:
                 cls.sql_queries[f"IQuery-{individual_count}"] = query
                 individual_count += 1

@@ -1,12 +1,32 @@
 <script>
+import axios from "axios";
 import * as echarts from "echarts";
+import SubstraitVisualizer from "./SubstraitVisualizer.vue";
 
 export default {
   name: "CompoDB-results",
+  components: {SubstraitVisualizer},
   data() {
     return {
       chartInstance: null,
+      results: null,
+      selectedQuery: null,
+      imagePopupVisible: false,
+      imageResults: [],
     };
+  },
+  computed: {
+    availableQueries() {
+      return this.results ? [...new Set(this.results.map(item => item.query_name))] : [];
+    }
+  },
+  watch: {
+    results(newResults) {
+      // Reset selected query if the results change
+      if (!newResults || newResults.length === 0) {
+        this.selectedQuery = null;
+      }
+    }
   },
   mounted() {
     this.initChart();
@@ -20,6 +40,7 @@ export default {
     updateChart(results) {
       console.log("RESULTS:");
       console.log(results);
+      this.results = results;
       this.clearChart();
 
       const combinations = results.reduce((acc, item) => {
@@ -51,6 +72,7 @@ export default {
         title: {
           text: 'Benchmark Results (Runtime in ms)',
           left: 'center',
+          top: '2%',
           textStyle: {
             color: 'black',
           },
@@ -63,26 +85,24 @@ export default {
           backgroundColor: 'rgba(50, 50, 50, 0.8)',
         },
         legend: {
-          top: '10%',
+          top: '10%', // Move the legend slightly up
           textStyle: {
             color: 'black',
           },
           data: series.map(s => s.name),
         },
+        grid: {
+          top: '20%', // Push chart content further down so it doesn't overlap with the legend
+          left: '10%',
+          right: '10%',
+          bottom: '15%', // Ensure space for the x-axis name
+        },
         xAxis: {
           type: 'category',
-          data: labels,
-          axisLabel: {
-            color: 'black',
-          },
-          axisLine: {
-            lineStyle: {
-              color: 'black',
-            },
-          },
-        },
-        yAxis: {
-          type: 'value',
+          data: labels.length ? labels : [''],
+          name: 'TPC-H Query',
+          nameLocation: 'middle', // Center the name under the x-axis
+          nameGap: 30, // Adjust spacing from axis
           axisLabel: {
             color: 'black',
           },
@@ -92,10 +112,33 @@ export default {
             },
           },
           splitLine: {
+            show: true, // Show grid lines
             lineStyle: {
-              color: 'rgba(255, 255, 255, 0.2)',
+              color: 'rgba(200, 200, 200, 0.5)', // Light gray grid
             },
           },
+          show: true, // Ensure axis is visible even if no data
+        },
+        yAxis: {
+          type: 'value',
+          name: 'Runtime (ms)',
+          nameLocation: 'middle', // Move name to the side, centered on the y-axis
+          nameGap: 50, // Adjust spacing from axis
+          axisLabel: {
+            color: 'black',
+          },
+          axisLine: {
+            lineStyle: {
+              color: 'black',
+            },
+          },
+          splitLine: {
+            show: true, // Show grid lines
+            lineStyle: {
+              color: 'rgba(200, 200, 200, 0.5)', // Light gray grid
+            },
+          },
+          show: true, // Ensure axis is visible even if no data
         },
         series,
       };
@@ -106,10 +149,59 @@ export default {
         this.chartInstance.clear();
       }
     },
-    showSubstraitPlans() {
-      // TODO
-    },
+    async fetchSubstraitPlans() {
+      if (!this.selectedQuery) {
+        alert("Please select a query first.");
+        return;
+      }
+      const selectedPlans = this.results.filter(item => item.query_name === this.selectedQuery);
+      console.log(selectedPlans)
+      if (selectedPlans.length === 0) {
+        alert("No query plan found for the selected query.");
+        return;
+      }
 
+      const requestData = selectedPlans.map(q => ({
+        query_name: q.query_name,
+        parser_name: q.parser_name,  // Ensure the field matches FastAPI model
+        query_plan: JSON.stringify(q.substrait_query),  // Parse string if it's JSON-encoded
+      }));
+
+      try {
+        const response = await axios.post("http://localhost:8000/visualize-substrait", requestData)
+          .then(response => {
+            if (response && response.data && Array.isArray(response.data.images)) {
+              console.log("Success:", response.data);  // Log the entire response for clarity
+              if (response.data.images.length > 0) {
+                this.imageResults = response.data.images.map(image => ({
+                  query_name: image.query_name,
+                  parser_name: image.parser_name,
+                  image_url: `http://localhost:8000${image.image_url}`
+                }));
+                console.log("IMAGERESULTS")
+                console.log(this.imageResults);
+                this.imagePopupVisible = true;
+              } else {
+                alert("No images found.");
+              }
+            } else {
+              alert("Failed to generate visualization or images are missing.");
+            }
+          })
+          .catch(error => {
+            console.error("Error fetching DAG:", error);  // Log the error for further inspection
+            if (error.response) {
+              console.error("API Response error:", error.response.data);
+            } else if (error.request) {
+              console.error("No response received:", error.request);
+            } else {
+              console.error("Error in setting up the request:", error.message);
+            }
+          });
+      } catch (error) {
+        console.error("Error fetching DAG:", error);
+      }
+    },
   },
 };
 </script>
@@ -118,7 +210,24 @@ export default {
   <div class="container">
     <h2>Performance Results</h2>
     <div id="bar-chart" style="width: 100%; height: 500px;"></div>
-    <button @click="showSubstraitPlans">Visualize Query Plans</button>
+
+    <!-- Query Selection & Button -->
+    <div class="query-selection">
+      <label for="query-dropdown">Select Query for visualization:</label>
+      <select id="query-dropdown" v-model="selectedQuery">
+        <option v-for="query in availableQueries" :key="query" :value="query">
+          {{ query }}
+        </option>
+      </select>
+      <button @click="fetchSubstraitPlans" :disabled="!selectedQuery">Visualize Query Plans</button>
+    </div>
+
+    <!-- SubstraitPlanPopup Component -->
+    <SubstraitVisualizer
+      :visible="imagePopupVisible"
+      :images="imageResults"
+      @close="imagePopupVisible = false"
+    />
   </div>
 </template>
 
@@ -126,6 +235,13 @@ export default {
 h2 {
     margin-bottom: 20px;
     margin-top: 0;
+}
+label {
+  margin: 0 0 0 220px;
+}
+#query-dropdown {
+  width: 55px;
+  margin: 10px 0 0 20px;
 }
 #bar-chart {
   display: block;

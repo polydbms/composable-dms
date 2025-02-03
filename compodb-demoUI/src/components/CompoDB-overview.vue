@@ -50,6 +50,8 @@ export default {
         queries: this.queries,
         inputFormat: this.inputFormat,
       };
+      console.log("BENCHMARK")
+      console.log(requestData)
       try {
         const response = await fetch('http://localhost:8000/run-benchmark', {
           method: 'POST',

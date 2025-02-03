@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from tests.benchmark import Benchmark
 from .routes import router
 import os
@@ -8,6 +10,7 @@ import logging
 app = FastAPI()
 
 app.include_router(router)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 origins = [
     "http://localhost:5173",
@@ -42,3 +45,17 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     print("Shutting down...")
+    static_folder = "static"
+
+    if os.path.exists(static_folder):
+        for filename in os.listdir(static_folder):
+            file_path = os.path.join(static_folder, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                print(f"Failed to delete {file_path}: {e}")
+
+    print("Static folder cleaned up.")

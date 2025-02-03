@@ -15,8 +15,7 @@ class CompoDB:
     _instances: List["CompoDB"] = []
 
     def __init__(self, parser: str, optimizer: List[str], execution_engine: str):
-        print("OPT::")
-        print(optimizer)
+
         # Parser selection
         if parser == 'Calcite':
             self.parser = IsthmusProducer()

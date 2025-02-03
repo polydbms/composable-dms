@@ -14,3 +14,4 @@ substrait
 python-dateutil
 polars-lts-cpu
 fastapi
+graphviz

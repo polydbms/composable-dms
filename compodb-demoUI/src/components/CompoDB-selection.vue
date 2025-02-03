@@ -9,12 +9,21 @@ export default {
       executionEngine: '',
       queries: [],
       inputFormat: 'parquet',
+      selectedQuerySet: 'tpch',
       query_set_tpch: [
         'tpch-q1', 'tpch-q2', 'tpch-q3', 'tpch-q4', 'tpch-q5', 'tpch-q6',
         'tpch-q7', 'tpch-q8', 'tpch-q9', 'tpch-q10', 'tpch-q11', 'tpch-q12',
         'tpch-q13', 'tpch-q14', 'tpch-q15', 'tpch-q16', 'tpch-q17', 'tpch-q18',
         'tpch-q19', 'tpch-q20', 'tpch-q21', 'tpch-q22'
       ],
+      query_set_reduced_tpch: [
+      'reduced_tpch_q1', 'reduced_tpch_q2', 'reduced_tpch_q3', 'reduced_tpch_q4',
+      'reduced_tpch_q5', 'reduced_tpch_q6', 'reduced_tpch_q7', 'reduced_tpch_q8',
+      'reduced_tpch_q9', 'reduced_tpch_q10', 'reduced_tpch_q11', 'reduced_tpch_q12',
+      'reduced_tpch_q13', 'reduced_tpch_q14', 'reduced_tpch_q15', 'reduced_tpch_q16',
+      'reduced_tpch_q17', 'reduced_tpch_q18', 'reduced_tpch_q19', 'reduced_tpch_q20',
+      'reduced_tpch_q21', 'reduced_tpch_q22'
+    ],
       selectAll: false,
     };
   },
@@ -22,6 +31,16 @@ export default {
     queries(newQueries) {
       // Emit the update-queries event when the queries array changes
       this.$emit("update-queries", newQueries);
+    },
+    selectedQuerySet(newValue) {
+      this.queries = []; // Reset queries when changing sets
+      this.selectAll = false;
+      this.$emit("update-queries", this.queries);
+    }
+  },
+  computed: {
+    currentQuerySet() {
+      return this.selectedQuerySet === 'tpch' ? this.query_set_tpch : this.query_set_reduced_tpch;
     }
   },
   methods: {
@@ -84,10 +103,14 @@ export default {
     },
     toggleAll() {
       this.selectAll = !this.selectAll;
-      this.queries = this.selectAll ? [...this.query_set_tpch] : [];
+      this.queries = this.selectAll ? [...this.currentQuerySet] : [];
       this.$emit("update-queries", this.queries);
     },
-
+    switchQuerySet() {
+      this.queries = [];  // Reset selected queries when switching sets
+      this.selectAll = false;
+      this.$emit("update-queries", this.queries);
+    },
     handleInputFormatChange() {
       this.$emit("update-input-format", this.inputFormat);
     },
@@ -143,14 +166,18 @@ export default {
     <!-- Query Selection -->
     <div class="query-selection">
         <label id="selection-label">Query Selection</label>
+        <select id="query-set" v-model="selectedQuerySet">
+          <option value="tpch">TPC-H</option>
+          <option value="reduced_tpch">Reduced TPC-H</option>
+        </select>
         <button @click="toggleAll" class="select-all-btn">{{ selectAll ? 'Deselect All' : 'Select All' }}</button>
     </div>
+    <!-- Query Options -->
     <div class="query-options">
-        <!-- Select All Checkbox -->
-        <div v-for="query in query_set_tpch" :key="query">
-            <input type="checkbox" :id="query" :value="query" v-model="queries" />
-            <label :for="query">{{ query.replace('tpch-q', 'TPC-H Q') }}</label>
-        </div>
+      <div v-for="query in currentQuerySet" :key="query">
+        <input type="checkbox" :id="query" :value="query" v-model="queries" />
+        <label :for="query">{{ query.replace('tpch-q', 'TPC-H Q').replace('reduced_tpch_q', 'Reduced TPC-H Q') }}</label>
+      </div>
     </div>
 
     <!-- Input Format -->
@@ -221,6 +248,13 @@ button {
 button:hover {
     background-color: #0056b3;
 }
+#query-set {
+  width: 115px;
+  height: 25px;
+  font-size: 0.7em;
+  padding: 0 0 1px 5px;
+  margin: 30px 0 0 40px;
+}
 select {
     width: 100%;
     padding: 8px;
@@ -273,7 +307,7 @@ select {
   cursor: pointer;
   border-radius: 4px;
   transition: background-color 0.2s;
-  width: 25%;
+  width: 100px;
   height: 25px;
   margin-top: 35px;
   margin-bottom: 5px;

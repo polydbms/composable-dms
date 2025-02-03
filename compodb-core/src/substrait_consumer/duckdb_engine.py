@@ -10,8 +10,6 @@ from src.errors import ConsumptionError
 
 class DuckDBEngine(ExecutionEngine):
 
-
-
     def __init__(self):
         self.db_connection = duckdb.connect()
         self.db_connection.execute("INSTALL substrait")
@@ -19,7 +17,6 @@ class DuckDBEngine(ExecutionEngine):
         self.input_format: str = None
 
     def run_substrait(self, substrait_query) -> Optional[DuckDBPyRelation]:
-        self.print_db()
         try:
             query_result = self.db_connection.from_substrait_json(substrait_query)
             return query_result

@@ -10,6 +10,7 @@ from datafusion import substrait as ds
 from datafusion import DataFrame
 from src.substrait_consumer.execution_engine import ExecutionEngine
 from src.substrait_producer.isthmus_producer import IsthmusProducer
+from src.substrait_producer.duckdb_producer import DuckDBProducer
 from src.substrait_producer.isthmus_kit.tpch_schema import (lineitem_schema, customer_schema, nation_schema,
                                                             orders_schema, part_schema, partsupp_schema, region_schema,
                                                             supplier_schema)
