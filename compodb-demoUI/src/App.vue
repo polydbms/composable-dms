@@ -64,23 +64,25 @@ export default {
     <div v-if="isLoading" class="loading-overlay">
       <div class="spinner"></div>
     </div>
-    <Grid>
-      <div class="inner-grid" style="grid-column: 1 / 2;">
+    <Grid style="margin-top: 0;">
+      <div class="inner-grid" style="grid-column: 1 / 6; margin: 0;">
+        <CompoDB id="compodb"/>
+      </div>
+      <div class="inner-grid" style="grid-column: 1 / 2; margin: 0;">
         <CompoDBSelection class="module" ref="selectionComponent" @new-composition="handleNewComposition"
                                                                   @update-queries="updateQueries"
                                                                   @update-input-format="updateInputFormat"
                                                                   @show-loading="showLoading"
                                                                   @hide-loading="hideLoading"/>
       </div>
-      <div class="inner-grid" style="grid-column: 2 / 3;">
-        <CompoDB class="module"/>
+      <div class="inner-grid" style="grid-column: 2 / 3; margin: 0;">
         <CompoDBOverview class="module" ref="overviewComponent" @reset-selection="clear"
                                                                 @benchmark-update="handleBenchmarkResults"
                                                                 @show-loading="showLoading"
                                                                 @hide-loading="hideLoading"/>
       </div>
-      <div class="inner-grid" style="grid-column: 3 / 6;">
-        <CompoDBResults class="module sub" ref="resultsComponent"/>
+      <div class="inner-grid" style="grid-column: 3 / 6; margin: 0;">
+        <CompoDBResults class="module" ref="resultsComponent"/>
       </div>
     </Grid>
   </div>
@@ -91,17 +93,21 @@ export default {
   background-color: white;
   padding: 16px;
   border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); /* Soft shadow */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
-.sub {
-  margin-top: 45px;
+#compodb {
+  background-color: white;
+  padding: 16px;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 .inner-grid {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
-  gap: 1.5vw;
+  gap: 10px;
   width: 100%;
-  margin: 20px auto;
+  margin: 10px auto;
   align-items: start;
   grid-auto-flow: row dense;
 }

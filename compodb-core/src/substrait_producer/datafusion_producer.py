@@ -38,18 +38,18 @@ class DataFusionProducer(Parser, Optimizer):
         # Attempt to register the table
         try:
             if table.endswith(".parquet"):
-                self.ctx.register_parquet(table_name, f"/data/parquet/{table}")
+                self.ctx.register_parquet(table_name, f"/app/data/parquet/{table}")
             else:
-                self.ctx.register_csv(table_name, f"/data/csv/{table}")
+                self.ctx.register_csv(table_name, f"/app/data/csv/{table}")
         except Exception as e:
             # Handle the "table already exists" error
             if "already exists" in str(e):
                 self.ctx.deregister_table(table_name)  # Deregister the table if it exists
                 # Re-register the table after deregistering
                 if table.endswith(".parquet"):
-                    self.ctx.register_parquet(table_name, f"/data/parquet/{table}")
+                    self.ctx.register_parquet(table_name, f"/app/data/parquet/{table}")
                 else:
-                    self.ctx.register_csv(table_name, f"/data/csv/{table}")
+                    self.ctx.register_csv(table_name, f"/app/data/csv/{table}")
             else:
                 # Raise the exception if it's not related to "already exists"
                 raise

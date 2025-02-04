@@ -70,7 +70,7 @@ export default {
 
       const options = {
         title: {
-          text: 'Benchmark Results (Runtime in ms)',
+          text: 'Benchmark Results (Runtime in s)',
           left: 'center',
           top: '2%',
           textStyle: {
@@ -121,7 +121,7 @@ export default {
         },
         yAxis: {
           type: 'value',
-          name: 'Runtime (ms)',
+          name: 'Runtime (s)',
           nameLocation: 'middle', // Move name to the side, centered on the y-axis
           nameGap: 50, // Adjust spacing from axis
           axisLabel: {

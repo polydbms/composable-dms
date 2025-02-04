@@ -14,9 +14,6 @@ class IbisProducer(Parser):
         self._db_connection = ibis.duckdb.connect()
         self._db_connection.con.execute("INSTALL substrait")
         self._db_connection.con.execute("LOAD substrait")
-        current_file_path = pathlib.Path(__file__).resolve()
-        project_root = current_file_path.parents[1]
-        self.json_plan_folder = project_root / 'tests' / 'queries' / 'tpch_ibis_json'
 
 
     def to_substrait(self, query) -> str:
@@ -26,11 +23,10 @@ class IbisProducer(Parser):
             #tpch_proto_bytes = compiler.compile(ibis_expr)
             #substrait_plan = json_format.MessageToJson(tpch_proto_bytes)
 
-            with open(f"{self.json_plan_folder}/{query.split('-')[1]}.json", "r") as f:
-                substrait_plan = json.loads(f.read())
+            substrait_plan = json.loads(query)
             substrait_json = json.dumps(substrait_plan, indent=2)
 
-            return substrait_json
+            return query
 
         except Exception as e:
 
@@ -45,7 +41,7 @@ class IbisProducer(Parser):
 
 
     def register_table(self, table: str) -> None:
-        self.db_connection.execute(f"CALL dbgen(sf=0.1)")
+        self._db_connection.raw_sql(f"CALL dbgen(sf=0.1)")
         # TODO: Register real tables
 
 

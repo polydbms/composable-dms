@@ -98,7 +98,7 @@
                                       "struct": {
                                         "types": [
                                           {
-                                            "i32": {
+                                            "i64": {
                                               "nullability": "NULLABILITY_REQUIRED"
                                             }
                                           },
@@ -113,7 +113,7 @@
                                             }
                                           },
                                           {
-                                            "i32": {
+                                            "i64": {
                                               "nullability": "NULLABILITY_REQUIRED"
                                             }
                                           },
@@ -124,8 +124,8 @@
                                           },
                                           {
                                             "decimal": {
-                                              "scale": 2,
-                                              "precision": 15,
+                                              "scale": 0,
+                                              "precision": 19,
                                               "nullability": "NULLABILITY_REQUIRED"
                                             }
                                           },
@@ -170,12 +170,12 @@
                                       "struct": {
                                         "types": [
                                           {
-                                            "i32": {
+                                            "i64": {
                                               "nullability": "NULLABILITY_REQUIRED"
                                             }
                                           },
                                           {
-                                            "i32": {
+                                            "i64": {
                                               "nullability": "NULLABILITY_REQUIRED"
                                             }
                                           },
@@ -186,8 +186,8 @@
                                           },
                                           {
                                             "decimal": {
-                                              "scale": 2,
-                                              "precision": 15,
+                                              "scale": 0,
+                                              "precision": 19,
                                               "nullability": "NULLABILITY_REQUIRED"
                                             }
                                           },

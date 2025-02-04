@@ -28,9 +28,9 @@ class Benchmark:
         cls.scale_factor = scale_factor
 
         #create tpch data
-        data_path = Path(__file__).parent.parent.parent / "data"
-        csv_path = Path(__file__).parent.parent.parent / "data" / "csv"
-        parquet_path = Path(__file__).parent.parent.parent / "data" / "parquet"
+        data_path = Path(__file__).parent.parent / "data"
+        csv_path = Path(__file__).parent.parent / "data" / "csv"
+        parquet_path = Path(__file__).parent.parent / "data" / "parquet"
         data_path.mkdir(parents=True, exist_ok=True)
         csv_path.mkdir(parents=True, exist_ok=True)
         parquet_path.mkdir(parents=True, exist_ok=True)
@@ -42,8 +42,8 @@ class Benchmark:
            con.execute(f"EXPORT DATABASE '{parquet_path}' (FORMAT PARQUET);")
            con.close()
 
-        DBContext.csv_path = csv_path
-        DBContext.parquet_path = parquet_path
+        DBContext.csv_path = "app" / csv_path
+        DBContext.parquet_path = "app" / parquet_path
         logger.info("Initializing TPCH database done")
 
 
@@ -115,7 +115,7 @@ class Benchmark:
                             stCPU = time.process_time()
                             query_result = compodb.execution_engine.run_substrait(benchmark.substrait_query)
                             etCPU = time.process_time()
-                            resCPU = (etCPU - stCPU) * 1000
+                            resCPU = (etCPU - stCPU)
                             if  (i == 1) | (i == 2) | (i == 3):
                                 times.append(resCPU)
                         timeAVG = (times[0] + times[1] + times[2]) / 3

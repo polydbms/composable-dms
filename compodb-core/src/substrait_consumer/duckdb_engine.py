@@ -26,11 +26,11 @@ class DuckDBEngine(ExecutionEngine):
             self.db_connection.execute("INSTALL substrait")
             self.db_connection.execute("LOAD substrait")
             if self.input_format == "csv":
-                for table in os.listdir("/data/csv"):
+                for table in os.listdir("/app/data/csv"):
                     if table.endswith(".csv"):
                         self.register_table(table)
             else:
-                for table in os.listdir("/data/parquet"):
+                for table in os.listdir("/app/data/parquet"):
                     if table.endswith(".parquet"):
                         self.register_table(table)
             raise ConsumptionError(repr(e))
@@ -62,17 +62,17 @@ class DuckDBEngine(ExecutionEngine):
         _input_format = table.split('.')[1]
         view_name = table.split('.')[0]
 
-        if isinstance(self.compodb.parser, IsthmusProducer):
-            view_name = view_name.upper()
+        #if isinstance(self.compodb.parser, IsthmusProducer):
+        #    view_name = view_name.upper()
 
         self.db_connection.execute(f"DROP VIEW IF EXISTS {view_name}")
         if table.endswith(".parquet"):
             self.db_connection.execute(
-                f"CREATE VIEW {view_name} AS SELECT * FROM read_parquet('/data/parquet/{table}')"
+                f"CREATE VIEW {view_name} AS SELECT * FROM read_parquet('/app/data/parquet/{table}')"
             )
         else:
             self.db_connection.execute(
-                f"CREATE VIEW {view_name} AS SELECT * FROM read_csv('/data/csv/{table}')"
+                f"CREATE VIEW {view_name} AS SELECT * FROM read_csv('/app/data/csv/{table}')"
             )
 
 

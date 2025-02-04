@@ -25,6 +25,7 @@ services:
       - "8000:8000"
     volumes:
       - ./compodb-core:/app
+      - ${HOME}/projects/compodb/data:/app/data
     networks:
       - app-network
 

@@ -25,9 +25,9 @@ class AceroEngine(ExecutionEngine):
             str.maketrans("", "", string.punctuation)
         )
         if table.endswith(".parquet"):
-            self.tables[table_name] = pq.read_table(f"/data/parquet/{table}")
+            self.tables[table_name] = pq.read_table(f"/app/data/parquet/{table}")
         else:
-            self.tables[table_name] = csv.read_csv( f"/data/csv/{table}")
+            self.tables[table_name] = csv.read_csv( f"/app/data/csv/{table}")
 
 
     def run_substrait(self, substrait_query) -> Optional[Table]:

@@ -43,31 +43,20 @@ class DataFusionEngine(ExecutionEngine):
     def register_table(self, table: str):
         self.table_mapping[table.split('.')[0].upper()] = table.split('.')[0]
         try:
-            if isinstance(self.compodb.parser, IsthmusProducer):
+            schema = self.schema_mapping.get(table.split('.')[0])
+            if table.endswith(".parquet"):
+                self.ctx.register_parquet(f"{table.split('.')[0]}", f"/app/data/parquet/{table}", schema=schema)
+            else:
+                self.ctx.register_csv(f"{table.split('.')[0]}", f"/app/data/csv/{table}", schema=schema)
+        except Exception as e:
+            if "already exists" in str(e):
+                self.ctx.deregister_table(table.split('.')[0])
                 schema = self.schema_mapping.get(table.split('.')[0])
                 if table.endswith(".parquet"):
                     self.ctx.register_parquet(f"{table.split('.')[0]}", f"/data/parquet/{table}", schema=schema)
                 else:
                     self.ctx.register_csv(f"{table.split('.')[0]}", f"/data/csv/{table}", schema=schema)
-            else:
-                if table.endswith(".parquet"):
-                    self.ctx.register_parquet(f"{table.split('.')[0]}", f"/data/parquet/{table}")
-                else:
-                    self.ctx.register_csv(f"{table.split('.')[0]}", f"/data/csv/{table}")
-        except Exception as e:
-            if "already exists" in str(e):
-                self.ctx.deregister_table(table.split('.')[0])
-                if isinstance(self.compodb.parser, IsthmusProducer):
-                    schema = self.schema_mapping.get(table.split('.')[0])
-                    if table.endswith(".parquet"):
-                        self.ctx.register_parquet(f"{table.split('.')[0]}", f"/data/parquet/{table}", schema=schema)
-                    else:
-                        self.ctx.register_csv(f"{table.split('.')[0]}", f"/data/csv/{table}", schema=schema)
-                else:
-                    if table.endswith(".parquet"):
-                        self.ctx.register_parquet(f"{table.split('.')[0]}", f"/data/parquet/{table}")
-                    else:
-                        self.ctx.register_csv(f"{table.split('.')[0]}", f"/data/csv/{table}")
+
 
 
     def prep_isthmus_query(self, substrait_query: str) -> str:

@@ -3,4 +3,5 @@
 node_modules/
 compodb-demoUI/.vscode
 compodb-core/connectors/http/static/
+compodb-core/tests/data/
 __pycache__/
