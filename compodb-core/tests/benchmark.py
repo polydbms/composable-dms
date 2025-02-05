@@ -52,8 +52,7 @@ class Benchmark:
         cls.input_format = input_format
         DBContext.input_format = input_format
         cls.results.clear()
-        print("RESULTSLIST:")
-        print(cls.results)
+
         # Setup producer & consumers table references
         DBContext.register_tables(input_format)
 
@@ -96,7 +95,6 @@ class Benchmark:
                         cls.results.append(benchmark_result)
                         continue
 
-
             for benchmark in cls.results:
                 if benchmark.parser_name == "Calcite" and benchmark.execution_engine_name == "DataFusion" and benchmark.query_name == "q17":
                     benchmark.error_msg = "PanicException: Q17 not supported"
@@ -115,7 +113,7 @@ class Benchmark:
                             stCPU = time.process_time()
                             query_result = compodb.execution_engine.run_substrait(benchmark.substrait_query)
                             etCPU = time.process_time()
-                            resCPU = (etCPU - stCPU)
+                            resCPU = (etCPU - stCPU) * 1000
                             if  (i == 1) | (i == 2) | (i == 3):
                                 times.append(resCPU)
                         timeAVG = (times[0] + times[1] + times[2]) / 3

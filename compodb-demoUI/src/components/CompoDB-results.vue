@@ -69,14 +69,6 @@ export default {
       });
 
       const options = {
-        title: {
-          text: 'Benchmark Results (Runtime in s)',
-          left: 'center',
-          top: '2%',
-          textStyle: {
-            color: 'black',
-          },
-        },
         tooltip: {
           trigger: 'axis',
           textStyle: {
@@ -84,15 +76,13 @@ export default {
           },
           backgroundColor: 'rgba(50, 50, 50, 0.8)',
         },
-        legend: {
-          top: '10%', // Move the legend slightly up
+        legend: {// Move the legend slightly up
           textStyle: {
             color: 'black',
           },
           data: series.map(s => s.name),
         },
-        grid: {
-          top: '20%', // Push chart content further down so it doesn't overlap with the legend
+          grid: {// Push chart content further down so it doesn't overlap with the legend
           left: '10%',
           right: '10%',
           bottom: '15%', // Ensure space for the x-axis name
@@ -121,7 +111,7 @@ export default {
         },
         yAxis: {
           type: 'value',
-          name: 'Runtime (s)',
+          name: 'Runtime (ms)',
           nameLocation: 'middle', // Move name to the side, centered on the y-axis
           nameGap: 50, // Adjust spacing from axis
           axisLabel: {
@@ -237,11 +227,11 @@ h2 {
     margin-top: 0;
 }
 label {
-  margin: 0 0 0 220px;
+  margin: 0 0 0 190px;
 }
 #query-dropdown {
   width: 55px;
-  margin: 10px 0 0 20px;
+  margin: 10px 0 0 25px;
 }
 #bar-chart {
   display: block;

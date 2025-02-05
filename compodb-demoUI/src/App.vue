@@ -64,11 +64,9 @@ export default {
     <div v-if="isLoading" class="loading-overlay">
       <div class="spinner"></div>
     </div>
-    <Grid style="margin-top: 0;">
-      <div class="inner-grid" style="grid-column: 1 / 6; margin: 0;">
-        <CompoDB id="compodb"/>
-      </div>
+    <Grid>
       <div class="inner-grid" style="grid-column: 1 / 2; margin: 0;">
+        <CompoDB class="module"/>
         <CompoDBSelection class="module" ref="selectionComponent" @new-composition="handleNewComposition"
                                                                   @update-queries="updateQueries"
                                                                   @update-input-format="updateInputFormat"

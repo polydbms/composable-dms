@@ -10,6 +10,7 @@ from datafusion import substrait as ds
 from datafusion import DataFrame
 from src.substrait_consumer.execution_engine import ExecutionEngine
 from src.substrait_producer.isthmus_producer import IsthmusProducer
+from src.substrait_producer.datafusion_producer import DataFusionProducer
 from src.substrait_producer.duckdb_producer import DuckDBProducer
 from src.substrait_producer.isthmus_kit.tpch_schema import (lineitem_schema, customer_schema, nation_schema,
                                                             orders_schema, part_schema, partsupp_schema, region_schema,
@@ -43,19 +44,31 @@ class DataFusionEngine(ExecutionEngine):
     def register_table(self, table: str):
         self.table_mapping[table.split('.')[0].upper()] = table.split('.')[0]
         try:
-            schema = self.schema_mapping.get(table.split('.')[0])
-            if table.endswith(".parquet"):
-                self.ctx.register_parquet(f"{table.split('.')[0]}", f"/app/data/parquet/{table}", schema=schema)
+            if isinstance(self.compodb.parser, DataFusionProducer):
+                if table.endswith(".parquet"):
+                    self.ctx.register_parquet(f"{table.split('.')[0]}", f"/app/data/parquet/{table}")
+                else:
+                    self.ctx.register_csv(f"{table.split('.')[0]}", f"/app/data/csv/{table}")
             else:
-                self.ctx.register_csv(f"{table.split('.')[0]}", f"/app/data/csv/{table}", schema=schema)
+                schema = self.schema_mapping.get(table.split('.')[0])
+                if table.endswith(".parquet"):
+                    self.ctx.register_parquet(f"{table.split('.')[0]}", f"/app/data/parquet/{table}", schema=schema)
+                else:
+                    self.ctx.register_csv(f"{table.split('.')[0]}", f"/app/data/csv/{table}", schema=schema)
         except Exception as e:
             if "already exists" in str(e):
                 self.ctx.deregister_table(table.split('.')[0])
-                schema = self.schema_mapping.get(table.split('.')[0])
-                if table.endswith(".parquet"):
-                    self.ctx.register_parquet(f"{table.split('.')[0]}", f"/data/parquet/{table}", schema=schema)
+                if isinstance(self.compodb.parser, DataFusionProducer):
+                    if table.endswith(".parquet"):
+                        self.ctx.register_parquet(f"{table.split('.')[0]}", f"/app/data/parquet/{table}")
+                    else:
+                        self.ctx.register_csv(f"{table.split('.')[0]}", f"/app/data/csv/{table}")
                 else:
-                    self.ctx.register_csv(f"{table.split('.')[0]}", f"/data/csv/{table}", schema=schema)
+                    schema = self.schema_mapping.get(table.split('.')[0])
+                    if table.endswith(".parquet"):
+                        self.ctx.register_parquet(f"{table.split('.')[0]}", f"/app/data/parquet/{table}", schema=schema)
+                    else:
+                        self.ctx.register_csv(f"{table.split('.')[0]}", f"/app/data/csv/{table}", schema=schema)
 
 
 
