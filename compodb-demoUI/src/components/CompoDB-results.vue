@@ -230,7 +230,7 @@ label {
   margin: 0 0 0 190px;
 }
 #query-dropdown {
-  width: 55px;
+  width: 80px;
   margin: 10px 0 0 25px;
 }
 #bar-chart {

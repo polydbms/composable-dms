@@ -40,6 +40,9 @@ async def startup_event():
         logging.info("Default scale factor set to {}".format(app.state.scale_factor))
 
     Benchmark.init_tpch(app.state.scale_factor)
+    Benchmark.init_imdb()
+    #Benchmark.init_stackoverflow()
+    Benchmark.init_tpcds(app.state.scale_factor)
 
 
 @app.on_event("shutdown")

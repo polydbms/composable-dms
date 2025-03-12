@@ -10,6 +10,7 @@ import time
 from typing import Optional
 from src.substrait_consumer.execution_engine import ExecutionEngine
 from src.errors import ConsumptionError
+from src.db_context import DBContext
 
 
 class AceroEngine(ExecutionEngine):
@@ -25,9 +26,9 @@ class AceroEngine(ExecutionEngine):
             str.maketrans("", "", string.punctuation)
         )
         if table.endswith(".parquet"):
-            self.tables[table_name] = pq.read_table(f"/app/data/parquet/{table}")
+            self.tables[table_name] = pq.read_table(f"{DBContext.current_data_path}/{table}")
         else:
-            self.tables[table_name] = csv.read_csv( f"/app/data/csv/{table}")
+            self.tables[table_name] = csv.read_csv( f"{DBContext.current_data_path}/{table}")
 
 
     def run_substrait(self, substrait_query) -> Optional[Table]:

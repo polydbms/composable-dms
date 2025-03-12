@@ -5,7 +5,9 @@ from src.substrait_producer.isthmus_producer import IsthmusProducer
 from src.substrait_consumer.duckdb_engine import DuckDBEngine
 from src.substrait_consumer.datafusion_engine import DataFusionEngine
 from src.substrait_consumer.acero_engine import AceroEngine
+from src.substrait_consumer.velox_engine import VeloxEngine
 from src.substrait_producer.optimizer import Optimizer
+from src.db_context import DBContext
 from typing import Union
 from typing import List
 
@@ -61,10 +63,14 @@ class CompoDB:
         elif execution_engine == 'Acero':
             self.execution_engine = AceroEngine()
             self.execution_engine.compodb = self
+        elif execution_engine == 'Velox':
+            self.execution_engine = VeloxEngine()
+            self.execution_engine.compodb = self
         else:
             raise ValueError('Invalid engine type')
 
         CompoDB._instances.append(self)
+        DBContext.compodb_instances.append(self)
 
 
     def get_optimizer_names(self) -> List[str]:
@@ -77,5 +83,6 @@ class CompoDB:
     @classmethod
     def clear_instances(cls) -> None:
         cls._instances.clear()
+        DBContext.compodb_instances.clear()
 
 

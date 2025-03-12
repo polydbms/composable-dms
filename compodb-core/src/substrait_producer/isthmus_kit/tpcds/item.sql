@@ -1,0 +1,25 @@
+CREATE TABLE item
+(
+    i_item_sk                 BIGINT NOT NULL,
+    i_item_id                 VARCHAR NOT NULL,
+    i_rec_start_date          DATE,
+    i_rec_end_date            DATE,
+    i_item_desc               VARCHAR,
+    i_current_price           DECIMAL(15, 2),
+    i_wholesale_cost          DECIMAL(15, 2),
+    i_brand_id                BIGINT,
+    i_brand                   VARCHAR,
+    i_class_id                BIGINT,
+    i_class                   VARCHAR,
+    i_category_id             BIGINT,
+    i_category                VARCHAR,
+    i_manufact_id             BIGINT,
+    i_manufact                VARCHAR,
+    i_size                    VARCHAR,
+    i_formulation             VARCHAR,
+    i_color                   VARCHAR,
+    i_units                   VARCHAR,
+    i_container               VARCHAR,
+    i_manager_id              BIGINT,
+    i_product_name            VARCHAR
+);

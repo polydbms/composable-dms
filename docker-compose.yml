@@ -1,4 +1,5 @@
 version: "3.8"
+
 services:
   frontend:
     container_name: CompoDB-demoUI
@@ -21,11 +22,14 @@ services:
       context: compodb-core
     environment:
       - SCALE_FACTOR=${SCALE_FACTOR}
+      - PYTHONPATH=/app
     ports:
       - "8000:8000"
     volumes:
       - ./compodb-core:/app
-      - ${HOME}/projects/compodb/data:/app/data
+      #- ${HOME}/projects/compodb/data:/app/data
+      - ./compodb-core/tests/data:/app/tests/data
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - app-network
 

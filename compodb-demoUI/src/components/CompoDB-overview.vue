@@ -82,7 +82,7 @@ export default {
 <div class="container">
     <h2>Selected Compositions</h2>
     <div v-for="(compoDB, index) in compoDBs" :key="index" class="composition">
-      <strong>Parser:</strong> {{ compoDB.parser }}<br>
+      <strong>Parser/Optimizer:</strong> {{ compoDB.parser }}<br>
       <span v-if="compoDB.optimizer && compoDB.optimizer.length">
         <strong>Optimizer:</strong> {{ compoDB.optimizer.join(', ') }}<br>
       </span>

@@ -1,0 +1,27 @@
+CREATE TABLE web_returns
+(
+    wr_returned_date_sk       BIGINT,
+    wr_returned_time_sk       BIGINT,
+    wr_item_sk                BIGINT NOT NULL,
+    wr_refunded_customer_sk   BIGINT,
+    wr_refunded_cdemo_sk      BIGINT,
+    wr_refunded_hdemo_sk      BIGINT,
+    wr_refunded_addr_sk       BIGINT,
+    wr_returning_customer_sk  BIGINT,
+    wr_returning_cdemo_sk     BIGINT,
+    wr_returning_hdemo_sk     BIGINT,
+    wr_returning_addr_sk      BIGINT,
+    wr_web_page_sk            BIGINT,
+    wr_reason_sk              BIGINT,
+    wr_order_number           BIGINT NOT NULL,
+    wr_return_quantity        BIGINT,
+    wr_return_amt             DECIMAL(15, 2),
+    wr_return_tax             DECIMAL(15, 2),
+    wr_return_amt_inc_tax     DECIMAL(15, 2),
+    wr_fee                    DECIMAL(15, 2),
+    wr_return_ship_cost       DECIMAL(15, 2),
+    wr_refunded_cash          DECIMAL(15, 2),
+    wr_reversed_charge        DECIMAL(15, 2),
+    wr_account_credit         DECIMAL(15, 2),
+    wr_net_loss               DECIMAL(15, 2)
+);

@@ -10,6 +10,18 @@ export default {
       queries: [],
       inputFormat: 'parquet',
       selectedQuerySet: 'tpch',
+      query_set_tpcds: [
+        'tpcds-query1', 'tpcds-query2', 'tpcds-query3', 'tpcds-query4', 'tpcds-query5', 'tpcds-query6', 'tpcds-query7', 'tpcds-query8', 'tpcds-query9', 'tpcds-query10',
+        'tpcds-query11', 'tpcds-query12', 'tpcds-query13', 'tpcds-query14', 'tpcds-query15', 'tpcds-query16', 'tpcds-query17', 'tpcds-query18', 'tpcds-query19', 'tpcds-query20',
+        'tpcds-query21', 'tpcds-query22', 'tpcds-query23', 'tpcds-query24', 'tpcds-query25', 'tpcds-query26', 'tpcds-query27', 'tpcds-query28', 'tpcds-query29', 'tpcds-query30',
+        'tpcds-query31', 'tpcds-query32', 'tpcds-query33', 'tpcds-query34', 'tpcds-query35', 'tpcds-query36', 'tpcds-query37', 'tpcds-query38', 'tpcds-query39', 'tpcds-query40',
+        'tpcds-query41', 'tpcds-query42', 'tpcds-query43', 'tpcds-query44', 'tpcds-query45', 'tpcds-query46', 'tpcds-query47', 'tpcds-query48', 'tpcds-query49', 'tpcds-query50',
+        'tpcds-query51', 'tpcds-query52', 'tpcds-query53', 'tpcds-query54', 'tpcds-query55', 'tpcds-query56', 'tpcds-query57', 'tpcds-query58', 'tpcds-query59', 'tpcds-query60',
+        'tpcds-query61', 'tpcds-query62', 'tpcds-query63', 'tpcds-query64', 'tpcds-query65', 'tpcds-query66', 'tpcds-query67', 'tpcds-query68', 'tpcds-query69', 'tpcds-query70',
+        'tpcds-query71', 'tpcds-query72', 'tpcds-query73', 'tpcds-query74', 'tpcds-query75', 'tpcds-query76', 'tpcds-query77', 'tpcds-query78', 'tpcds-query79', 'tpcds-query80',
+        'tpcds-query81', 'tpcds-query82', 'tpcds-query83', 'tpcds-query84', 'tpcds-query85', 'tpcds-query86', 'tpcds-query87', 'tpcds-query88', 'tpcds-query89', 'tpcds-query90',
+        'tpcds-query91', 'tpcds-query92', 'tpcds-query93', 'tpcds-query94', 'tpcds-query95', 'tpcds-query96', 'tpcds-query97', 'tpcds-query98', 'tpcds-query99'
+      ],
       query_set_tpch: [
         'tpch-q1', 'tpch-q2', 'tpch-q3', 'tpch-q4', 'tpch-q5', 'tpch-q6',
         'tpch-q7', 'tpch-q8', 'tpch-q9', 'tpch-q10', 'tpch-q11', 'tpch-q12',
@@ -17,30 +29,65 @@ export default {
         'tpch-q19', 'tpch-q20', 'tpch-q21', 'tpch-q22'
       ],
       query_set_reduced_tpch: [
-      'reduced_tpch_q1', 'reduced_tpch_q2', 'reduced_tpch_q3', 'reduced_tpch_q4',
-      'reduced_tpch_q5', 'reduced_tpch_q6', 'reduced_tpch_q7', 'reduced_tpch_q8',
-      'reduced_tpch_q9', 'reduced_tpch_q10', 'reduced_tpch_q11', 'reduced_tpch_q12',
-      'reduced_tpch_q13', 'reduced_tpch_q14', 'reduced_tpch_q15', 'reduced_tpch_q16',
-      'reduced_tpch_q17', 'reduced_tpch_q18', 'reduced_tpch_q19', 'reduced_tpch_q20',
-      'reduced_tpch_q21', 'reduced_tpch_q22'
-    ],
+        'reduced_tpch_q1', 'reduced_tpch_q2', 'reduced_tpch_q3', 'reduced_tpch_q4',
+        'reduced_tpch_q5', 'reduced_tpch_q6', 'reduced_tpch_q7', 'reduced_tpch_q8',
+        'reduced_tpch_q9', 'reduced_tpch_q10', 'reduced_tpch_q11', 'reduced_tpch_q12',
+        'reduced_tpch_q13', 'reduced_tpch_q14', 'reduced_tpch_q15', 'reduced_tpch_q16',
+        'reduced_tpch_q17', 'reduced_tpch_q18', 'reduced_tpch_q19', 'reduced_tpch_q20',
+        'reduced_tpch_q21', 'reduced_tpch_q22'
+      ],
+      query_set_job: [
+        'j-o-b_1a', 'j-o-b_1b', 'j-o-b_1c', 'j-o-b_1d', 'j-o-b_2a', 'j-o-b_2b', 'j-o-b_2c', 'j-o-b_2d', 'j-o-b_3a',
+        'j-o-b_3b', 'j-o-b_3c', 'j-o-b_4a', 'j-o-b_4b', 'j-o-b_4c', 'j-o-b_5a', 'j-o-b_5b', 'j-o-b_5c', 'j-o-b_6a',
+        'j-o-b_6b', 'j-o-b_6c', 'j-o-b_6d', 'j-o-b_6e', 'j-o-b_6f', 'j-o-b_7a', 'j-o-b_7b', 'j-o-b_7c', 'j-o-b_8a',
+        'j-o-b_8b', 'j-o-b_8c', 'j-o-b_8d', 'j-o-b_10a', 'j-o-b_10b', 'j-o-b_10c', 'j-o-b_11a', 'j-o-b_11b', 'j-o-b_11c',
+        'j-o-b_11d', 'j-o-b_12a', 'j-o-b_12b', 'j-o-b_12c', 'j-o-b_13a', 'j-o-b_13b', 'j-o-b_13c', 'j-o-b_13d',
+        'j-o-b_14a', 'j-o-b_14b', 'j-o-b_14c', 'j-o-b_15a', 'j-o-b_15b', 'j-o-b_15c', 'j-o-b_15d', 'j-o-b_16a',
+        'j-o-b_16b', 'j-o-b_16c', 'j-o-b_16d', 'j-o-b_17a', 'j-o-b_17b', 'j-o-b_17c', 'j-o-b_17d', 'j-o-b_17e', 'j-o-b_17f',
+        'j-o-b_18a', 'j-o-b_18b', 'j-o-b_18c', 'j-o-b_19a', 'j-o-b_19b', 'j-o-b_19c', 'j-o-b_19d', 'j-o-b_20a', 'j-o-b_20b',
+        'j-o-b_20c', 'j-o-b_21a', 'j-o-b_21b', 'j-o-b_21c', 'j-o-b_22a', 'j-o-b_22b', 'j-o-b_22c', 'j-o-b_22d', 'j-o-b_23a',
+        'j-o-b_23b', 'j-o-b_23c', 'j-o-b_24a', 'j-o-b_24b', 'j-o-b_25a', 'j-o-b_25b', 'j-o-b_25c', 'j-o-b_26a',
+        'j-o-b_26b', 'j-o-b_26c', 'j-o-b_27a', 'j-o-b_27b', 'j-o-b_27c', 'j-o-b_28a', 'j-o-b_28b', 'j-o-b_28c',
+        'j-o-b_29a', 'j-o-b_29b', 'j-o-b_29c', 'j-o-b_30a', 'j-o-b_30b', 'j-o-b_30c', 'j-o-b_31a', 'j-o-b_31b',
+        'j-o-b_31c', 'j-o-b_32a', 'j-o-b_32b', 'j-o-b_33a', 'j-o-b_33b', 'j-o-b_33c'
+      ],
       selectAll: false,
     };
   },
   watch: {
     queries(newQueries) {
-      // Emit the update-queries event when the queries array changes
       this.$emit("update-queries", newQueries);
     },
     selectedQuerySet(newValue) {
-      this.queries = []; // Reset queries when changing sets
+      this.queries = [];
       this.selectAll = false;
       this.$emit("update-queries", this.queries);
     }
   },
   computed: {
+    availableParsers() {
+      const parsers = [
+        { value: "Calcite", label: "Calcite" },
+        { value: "DataFusion", label: "DataFusion" },
+        { value: "DuckDB", label: "DuckDB" }
+      ];
+      if (this.selectedQuerySet === "tpch") {
+        parsers.push({ value: "Ibis", label: "Ibis" });
+      }
+      return parsers;
+    },
     currentQuerySet() {
-      return this.selectedQuerySet === 'tpch' ? this.query_set_tpch : this.query_set_reduced_tpch;
+      if (this.selectedQuerySet ==='tpch') {
+        return this.query_set_tpch;
+      } else if (this.selectedQuerySet === 'reduced_tpch') {
+        return this.query_set_reduced_tpch;
+      } else if (this.selectedQuerySet === 'tpcds') {
+        return this.query_set_tpcds;
+      } else if (this.selectedQuerySet === 'job') {
+        return this.query_set_job;
+      } else {
+        return [];
+      }
     }
   },
   methods: {
@@ -124,12 +171,11 @@ export default {
     <form @submit.prevent="submitForm">
 
       <!-- Parser Selection -->
-      <label for="parser">Select Parser</label>
+      <label for="parser">Select Parser/Optimizer</label>
       <select id="parser" v-model="parser" required>
-          <option value="Calcite">Calcite</option>
-          <option value="DataFusion">DataFusion</option>
-          <option value="DuckDB">DuckDB</option>
-          <option value="Ibis">Ibis</option>
+          <option v-for="option in availableParsers" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
       </select>
 
       <!-- Optimizer Selection -->
@@ -156,6 +202,7 @@ export default {
       <select id="execution-engine" v-model="executionEngine" required>
           <option value="DuckDB">DuckDB Engine</option>
           <option value="DataFusion">DataFusion Engine</option>
+          <!--<option value="Velox">Velox Engine</option>-->
           <option value="Acero">Acero Engine</option>
       </select>
 
@@ -169,6 +216,8 @@ export default {
         <select id="query-set" v-model="selectedQuerySet">
           <option value="tpch">TPC-H</option>
           <option value="reduced_tpch">Reduced TPC-H</option>
+          <option value="tpcds">TPC-DS</option>
+          <option value="job">Join-Order-Benchmark</option>
         </select>
         <button @click="toggleAll" class="select-all-btn">{{ selectAll ? 'Deselect All' : 'Select All' }}</button>
     </div>
@@ -176,7 +225,7 @@ export default {
     <div class="query-options">
       <div v-for="query in currentQuerySet" :key="query">
         <input type="checkbox" :id="query" :value="query" v-model="queries" />
-        <label :for="query">{{ query.replace('tpch-q', 'TPC-H Q').replace('reduced_tpch_q', 'Reduced TPC-H Q') }}</label>
+        <label :for="query">{{ query.replace('tpch-q', 'TPC-H Q').replace('reduced_tpch_q', 'Reduced TPC-H Q').replace('j-o-b_', 'JOB ').replace('tpcds-query', 'TPC-DS Q') }}</label>
       </div>
     </div>
 

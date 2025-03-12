@@ -2,6 +2,7 @@ import json
 import jpype.imports
 from src.substrait_producer.parser import Parser
 from src.substrait_producer.optimizer import Optimizer
+from src.db_context import DBContext
 import src.substrait_producer.java_definitions as java
 from com.google.protobuf.util import JsonFormat as json_formatter
 from src.errors import ProductionError
@@ -28,11 +29,15 @@ class IsthmusProducer(Parser, Optimizer):
         return substrait_query
 
 
-    def get_isthmus_schema(self):
+    def get_isthmus_schema(self, schema_loc):
+        if schema_loc:
+            loc = f"/{schema_loc}"
+        else:
+            loc = ''
         isthmus_schema = []
-        for file in os.listdir("/app/src/substrait_producer/isthmus_kit"):
+        for file in os.listdir(f"/app/src/substrait_producer/isthmus_kit{loc}"):
             if file.endswith(".sql"):
-                with open(f'/app/src/substrait_producer/isthmus_kit/{file}') as create_file:
+                with open(f'/app/src/substrait_producer/isthmus_kit{loc}/{file}') as create_file:
                     create_sql = create_file.read()
                 isthmus_schema.append(create_sql)
         # print(isthmus_schema)
@@ -57,11 +62,15 @@ class IsthmusProducer(Parser, Optimizer):
         return json_plan
 
 
-
-
-
     def register_table(self, table: str) -> None:
-        self.java_schema_list = self.get_java_schema(self.get_isthmus_schema())
+        schema = DBContext.current_data_path.name
+
+        if schema in {'tpch', 'tpcds', 'imdb'}:
+            schema_loc = schema
+        else:
+            schema_loc = None
+
+        self.java_schema_list = self.get_java_schema(self.get_isthmus_schema(schema_loc))
 
 
     def get_name(self) -> str:

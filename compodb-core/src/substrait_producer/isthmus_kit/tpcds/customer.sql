@@ -1,0 +1,20 @@
+CREATE TABLE customer (
+    c_customer_sk BIGINT NOT NULL,
+    c_customer_id VARCHAR NOT NULL,
+    c_current_cdemo_sk BIGINT,
+    c_current_hdemo_sk BIGINT,
+    c_current_addr_sk BIGINT,
+    c_first_shipto_date_sk BIGINT,
+    c_first_sales_date_sk BIGINT,
+    c_salutation VARCHAR,
+    c_first_name VARCHAR,
+    c_last_name VARCHAR,
+    c_preferred_cust_flag VARCHAR,
+    c_birth_day BIGINT,
+    c_birth_month BIGINT,
+    c_birth_year BIGINT,
+    c_birth_country VARCHAR,
+    c_login VARCHAR,
+    c_email_address VARCHAR,
+    c_last_review_date_sk VARCHAR
+);

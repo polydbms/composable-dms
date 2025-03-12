@@ -8,6 +8,7 @@ from datafusion import substrait as ds
 import substrait.gen.proto.plan_pb2 as plan_pb2
 from google.protobuf.json_format import MessageToJson
 from src.errors import ProductionError
+from src.db_context import DBContext
 
 
 class DataFusionProducer(Parser, Optimizer):
@@ -38,18 +39,18 @@ class DataFusionProducer(Parser, Optimizer):
         # Attempt to register the table
         try:
             if table.endswith(".parquet"):
-                self.ctx.register_parquet(table_name, f"/app/data/parquet/{table}")
+                self.ctx.register_parquet(table_name, f"{DBContext.current_data_path}/{table}")
             else:
-                self.ctx.register_csv(table_name, f"/app/data/csv/{table}")
+                self.ctx.register_csv(table_name, f"{DBContext.current_data_path}/{table}")
         except Exception as e:
             # Handle the "table already exists" error
             if "already exists" in str(e):
                 self.ctx.deregister_table(table_name)  # Deregister the table if it exists
                 # Re-register the table after deregistering
                 if table.endswith(".parquet"):
-                    self.ctx.register_parquet(table_name, f"/app/data/parquet/{table}")
+                    self.ctx.register_parquet(table_name, f"{DBContext.current_data_path}/{table}")
                 else:
-                    self.ctx.register_csv(table_name, f"/app/data/csv/{table}")
+                    self.ctx.register_csv(table_name, f"{DBContext.current_data_path}/{table}")
             else:
                 # Raise the exception if it's not related to "already exists"
                 raise

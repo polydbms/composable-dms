@@ -5,6 +5,7 @@ from typing import Optional
 import time
 from src.substrait_consumer.execution_engine import ExecutionEngine
 from src.substrait_producer.isthmus_producer import IsthmusProducer
+from src.db_context import DBContext
 from src.errors import ConsumptionError
 
 
@@ -26,11 +27,11 @@ class DuckDBEngine(ExecutionEngine):
             self.db_connection.execute("INSTALL substrait")
             self.db_connection.execute("LOAD substrait")
             if self.input_format == "csv":
-                for table in os.listdir("/app/data/csv"):
+                for table in os.listdir(f"{DBContext.current_data_path}"):
                     if table.endswith(".csv"):
                         self.register_table(table)
             else:
-                for table in os.listdir("/app/data/parquet"):
+                for table in os.listdir(f"/{DBContext.current_data_path}"):
                     if table.endswith(".parquet"):
                         self.register_table(table)
             raise ConsumptionError(repr(e))
@@ -59,20 +60,17 @@ class DuckDBEngine(ExecutionEngine):
             return None
 
     def register_table(self, table: str):
-        _input_format = table.split('.')[1]
+        self.input_format = table.split('.')[1]
         view_name = table.split('.')[0]
-
-        #if isinstance(self.compodb.parser, IsthmusProducer):
-        #    view_name = view_name.upper()
 
         self.db_connection.execute(f"DROP VIEW IF EXISTS {view_name}")
         if table.endswith(".parquet"):
             self.db_connection.execute(
-                f"CREATE VIEW {view_name} AS SELECT * FROM read_parquet('/app/data/parquet/{table}')"
+                f"CREATE VIEW {view_name} AS SELECT * FROM read_parquet('{DBContext.current_data_path}/{table}')"
             )
         else:
             self.db_connection.execute(
-                f"CREATE VIEW {view_name} AS SELECT * FROM read_csv('/app/data/csv/{table}')"
+                f"CREATE VIEW {view_name} AS SELECT * FROM read_csv('{DBContext.current_data_path}/{table}')"
             )
 
 

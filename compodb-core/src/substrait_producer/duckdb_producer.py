@@ -1,7 +1,9 @@
 from src.substrait_producer.parser import Parser
 from src.substrait_producer.optimizer import Optimizer
+from src.db_context import DBContext
 import duckdb
 import json
+import os
 from src.errors import ProductionError
 
 
@@ -26,7 +28,10 @@ class DuckDBProducer(Parser, Optimizer):
             self.db_connection = duckdb.connect()
             self.db_connection.execute("INSTALL substrait")
             self.db_connection.execute("LOAD substrait")
-            self.db_connection.execute(f"CALL dbgen(sf=0.1)")
+
+            for table in os.listdir(f"{DBContext.current_data_path}"):
+                if table.endswith(".parquet") or table.endswith(".csv"):
+                    self.register_table(table)
 
             raise ProductionError(repr(e))
 
@@ -36,9 +41,21 @@ class DuckDBProducer(Parser, Optimizer):
 
 
     def register_table(self, table: str) -> None:
-        # TODO: Register other data than tpc-h
-        self.db_connection.execute(f"CALL dbgen(sf=0.1)")
+        view_name = table.split('.')[0]
+
+        self.db_connection.execute(f"DROP VIEW IF EXISTS {view_name}")
+        if table.endswith(".parquet"):
+            self.db_connection.execute(
+                f"CREATE VIEW {view_name} AS SELECT * FROM read_parquet('{DBContext.current_data_path}/{table}')"
+            )
+        else:
+            self.db_connection.execute(
+                f"CREATE VIEW {view_name} AS SELECT * FROM read_csv('{DBContext.current_data_path}/{table}')"
+            )
 
 
     def get_name(self) -> str:
         return "DuckDB"
+
+    def print_db(self):
+        self.db_connection.sql("SELECT * FROM information_schema.tables").show()

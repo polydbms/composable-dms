@@ -1,8 +1,3 @@
-from src.substrait_producer.datafusion_producer import DataFusionProducer
-from src.substrait_producer.duckdb_producer import DuckDBProducer
-from src.substrait_producer.ibis_producer import IbisProducer
-from src.substrait_producer.isthmus_producer import IsthmusProducer
-from src.compodb import CompoDB
 from typing import List
 import os
 
@@ -11,9 +6,11 @@ class DBContext:
 
     csv_path: str = ""
     parquet_path: str = ""
+    current_data_path: str = ""
     csv_tables: List[str] = []
     parquet_tables: List[str] = []
-    input_format: str = None
+    compodb_instances = []
+    benchmark = None
 
     '''
     Registers a table reference (csv/parquet) with the current CompoDB instances
@@ -21,7 +18,7 @@ class DBContext:
     @classmethod
     def register_table(cls, table: str) -> None:
         try:
-            for compodb in CompoDB.get_compodb_instances():
+            for compodb in cls.compodb_instances:
                 compodb.parser.register_table(table)
                 if compodb.optimizer:
                     for opt in compodb.optimizer:
@@ -36,17 +33,22 @@ class DBContext:
             cls.csv_tables.append(table)
 
     @classmethod
-    def register_tables(cls, input_format):
-        if input_format == "csv":
-            for table in os.listdir(cls.csv_path):
-                if table.endswith(".csv"):
-                    # TODO: write_isthmus_schema()
-                    cls.register_table(table)
+    def register_tables(cls, input_format, benchmark=None):
+        cls.benchmark = benchmark
+        if benchmark:
+            if input_format == "csv":
+                cls.current_data_path = cls.csv_path / benchmark
+            else:
+                cls.current_data_path = cls.parquet_path / benchmark
         else:
-            for table in os.listdir(cls.parquet_path):
-                if table.endswith(".parquet"):
-                    # TODO: write_isthmus_schema()
-                    cls.register_table(table)
+            if input_format == "csv":
+                cls.current_data_path = cls.csv_path
+            else:
+                cls.current_data_path = cls.parquet_path
+
+        for table in os.listdir(cls.current_data_path):
+            if table.endswith(".parquet") or table.endswith(".csv"):
+                cls.register_table(table)
 
 
     @classmethod

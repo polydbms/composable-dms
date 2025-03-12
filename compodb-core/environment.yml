@@ -1,10 +1,11 @@
 name: composable-dms
 channels:
   - conda-forge
+channel_priority: strict
 dependencies:
   - python=3.9
   - openjdk=11
   - pandas=2.1.4
   - numpy=1.26.4
-  - matplotlib=3.8.2
+  - matplotlib-base=3.8.2
   - uvicorn[standard]

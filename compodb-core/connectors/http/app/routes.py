@@ -50,12 +50,8 @@ async def run_benchmark(benchmark: Benchmark):
     results_json = [result.json() for result in results]
 
     for compoDB in benchmark.compoDBs:
-        print("CompoDB:")
-        print(f"Optimizer: {compoDB.optimizer}")
-        print(f"Execution Engine: {compoDB.executionEngine}")
-    print("Tested with:")
+        print(f"CompoDB - Parser: {compoDB.parser}, Optimizer: {compoDB.optimizer}, Execution Engine: {compoDB.executionEngine}")
     print(f"Queries: {', '.join(benchmark.queries)}")
-    print(f"Input Format: {benchmark.inputFormat}")
 
     return {"message": "Benchmark ran successfully", "data": results_json}
 

@@ -4,7 +4,7 @@
       class="popup"
       ref="popup"
       @mousedown="startDrag"
-      :style="{ top: `${position.top}px`, left: `${position.left}px`, width: `${position.width}px`, height: `${position.height}px` }"
+      :style="{ top: position.top + 'px', left: position.left + 'px', width: position.width + 'px', height: position.height + 'px' }"
     >
       <button class="close-btn" @click="closePopup">✖</button>
       <h4>Substrait Plan Visualizations</h4>
@@ -28,12 +28,21 @@ export default {
   },
   data() {
     return {
-      position: { top: 100, left: 100, width: 600, height: 400 }, // Initial position and size
+      position: { top: 100, left: 100, width: 1000, height: 600 },
       dragging: false,
       resizing: false,
       offset: { x: 0, y: 0 },
       resizeStart: { width: 0, height: 0, mouseX: 0, mouseY: 0 }
     };
+  },
+  watch: {
+    visible(newVal) {
+      if (newVal) {
+        this.$nextTick(() => {
+          this.adjustImageSizes();
+        });
+      }
+    }
   },
   methods: {
     closePopup() {
@@ -93,6 +102,17 @@ export default {
       this.resizing = false;
       document.removeEventListener("mousemove", this.resize);
       document.removeEventListener("mouseup", this.stopResize);
+    },
+    adjustImageSizes() {
+      this.$nextTick(() => {
+        if (this.$refs.popup) {
+          const images = this.$refs.popup.querySelectorAll('img');
+          images.forEach(img => {
+            img.style.maxWidth = `${this.position.width - 40}px`; // Adjust for padding/margin
+            img.style.maxHeight = `${this.position.height - 100}px`; // Adjust for header and padding
+          });
+        }
+      });
     }
   }
 };
