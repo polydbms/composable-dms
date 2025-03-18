@@ -29,12 +29,13 @@ class Benchmark:
     parquet_path = Path(__file__).parent.parent / "data" / "parquet"
     imdb_path = Path(__file__).parent.parent / "tests" / "data" / "imdb"
     stackoverflow_path = Path(__file__).parent.parent / "tests" / "data" / "stackoverflow"
+    query_path = Path(__file__).parent.parent / "tests" / "queries" / "substrait"
     benchmark = None
 
 
     @classmethod
     def init_imdb(cls):
-        logger.info("Initializing imdb data")
+        logger.info("Initializing imdb data ...")
         imdb = cls.imdb_path.parent.parent
 
         if not os.path.isdir(cls.imdb_path):
@@ -48,7 +49,7 @@ class Benchmark:
             subprocess.run(['bash', imdb / 'download_imdb.sh'], check=True)
             logger.info(f"Finished running download_imdb.sh")
         else:
-            logger.info(f"The folder {cls.imdb_path} exists and is not empty.")
+            logger.info(f"The folder {cls.imdb_path} exists and is not empty, transferring ...")
 
         # duckdb ?
         con = duckdb.connect()
@@ -82,74 +83,54 @@ class Benchmark:
 
     @classmethod
     def init_stackoverflow(cls):
-        logger.info("Initializing stackoverflow data")
+        logger.info("Initializing stackoverflow data ...")
         stackoverflow = cls.stackoverflow_path.parent.parent
 
         if not os.path.isdir(cls.stackoverflow_path):
-            logger.info(f"The folder {cls.stackoverflow_path} does not exist. Running download_stackoverflow.sh ...")
-            cls.ensure_permissions(stackoverflow / 'download_stackoverflow.sh')
-            subprocess.run(['bash', stackoverflow / 'download_stackoverflow.sh'], check=True)
-            logger.info(f"Finished running download_stackoverflow.sh")
+            logger.info(f"The folder {cls.stackoverflow_path} does not exist. Please run download_stackoverflow.sh first")
+            return
         elif not os.listdir(cls.stackoverflow_path):
-            logger.info(f"The folder {cls.stackoverflow_path} exists but is empty. Running download_stackoverflow.sh ...")
-            cls.ensure_permissions(stackoverflow / 'download_stackoverflow.sh')
-            subprocess.run(['bash', stackoverflow / 'download_stackoverflow.sh'], check=True)
-            logger.info(f"Finished running download_stackoverflow.sh")
+            logger.info(f"The folder {cls.stackoverflow_path} exists but is empty. Please run download_stackoverflow.sh first")
+            return
         else:
-            logger.info(f"The folder {cls.stackoverflow_path} exists and is not empty.")
+            logger.info(f"The folder {cls.stackoverflow_path} exists and is not empty, transferring ...")
 
-        duckdb_path = cls.data_path / "stackoverflow.duckdb"
-        con = duckdb.connect(str(duckdb_path))
-        con.execute("PRAGMA memory_limit='20GB';")
-        con.execute("PRAGMA threads=12;")
-
-        for filename in os.listdir(cls.stackoverflow_path):
-            if filename.endswith('.csv'):
-                table_name = filename.replace('.csv', '')
-                csv_file = cls.stackoverflow_path / filename
-                if con.execute(
-                        f"SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '{table_name}'").fetchone()[
-                    0] > 0:
-                    logger.info(f"Table {table_name} already exists. Skipping creation.")
-                else:
-                    # Create the table by reading the CSV in chunks and inserting directly
-                    logger.info(f"Loading data from {csv_file} into table {table_name}...")
-
-                    # Use the DuckDB CSV reader directly to load data in chunks
-                    chunk_size = 100000  # Set the chunk size to fit in memory
-                    cursor = con.cursor()
-                    cursor.execute(
-                        f"CREATE TABLE {table_name} AS SELECT * FROM read_csv_auto('{csv_file}', header=True, all_varchar=True, sample_size=10000, ignore_errors=True);")
-
-                    # Insert data from the chunk in increments (if you need finer chunking)
-                    for chunk in pd.read_csv(csv_file, chunksize=chunk_size):
-                        chunk_file = f"/tmp/{table_name}_chunk.csv"
-                        chunk.to_csv(chunk_file, index=False)  # Save chunk to a temporary CSV file
-                        cursor.execute(
-                            f"INSERT INTO {table_name} SELECT * FROM read_csv_auto('{chunk_file}', header=True, all_varchar=True, ignore_errors=True);")
-
-                    logger.info(f"Table {table_name} created and data inserted.")
+        con = duckdb.connect()
 
         csv_path = cls.csv_path / "stackoverflow"
         parquet_path = cls.parquet_path / "stackoverflow"
         csv_path.mkdir(parents=True, exist_ok=True)
         parquet_path.mkdir(parents=True, exist_ok=True)
 
-        for table in con.execute("SHOW TABLES").fetchall():
-            table_name = table[0]
-            con.execute(f"COPY {table_name} TO '{parquet_path}/{table_name}.parquet' (FORMAT PARQUET);")
-            con.execute(f"COPY {table_name} TO '{csv_path}/{table_name}.csv' (FORMAT CSV);")
+        for filename in os.listdir(cls.stackoverflow_path):
+            if filename.endswith('.csv'):
+                table_name = filename.replace('.csv', '')
+                csv_source_file = cls.stackoverflow_path / filename
+
+                parquet_file = parquet_path / (table_name+'.parquet')
+                csv_file = csv_path / (table_name+'.csv')
+
+                con.execute(f"""
+                    COPY (SELECT * FROM read_csv_auto('{csv_source_file}')) 
+                    TO '{parquet_file}' (FORMAT PARQUET);
+                """)
+
+                #logger.info(f"Table {table_name} streamed and exported to {parquet_file}")
+
+                con.execute(f"""
+                    COPY (SELECT * FROM read_csv_auto('{csv_source_file}')) 
+                    TO '{csv_file}' (FORMAT CSV);
+                """)
+
+                #logger.info(f"Table {table_name} streamed and exported to {csv_file}")
 
         con.close()
-
-        if duckdb_path.exists():
-            duckdb_path.unlink()
 
         logger.info("Initializing stackoverflow data done")
 
     @classmethod
     def init_tpcds(cls, scale_factor = 0.1):
-        logger.info("Initializing TPC-DS data")
+        logger.info("Initializing TPC-DS data ...")
 
         csv_path = cls.csv_path / "tpcds"
         parquet_path = cls.parquet_path / "tpcds"
@@ -168,7 +149,7 @@ class Benchmark:
 
     @classmethod
     def init_tpch(cls, scale_factor = 0.1):
-        logger.info("Initializing TPC-H data")
+        logger.info("Initializing TPC-H data ...")
         cls.scale_factor = scale_factor
         cls.data_path.mkdir(parents=True, exist_ok=True)
         cls.csv_path.mkdir(parents=True, exist_ok=True)
@@ -250,6 +231,12 @@ class Benchmark:
                         continue
 
             for benchmark in cls.results:
+                try:
+                    cls.write_substrait_to_file(benchmark)
+                except Exception as e:
+                    logger.info(f"Something went wrong while writing the {benchmark.parser_name} {benchmark.query_name} substrait to file: {str(e)[:150]}")
+
+            for benchmark in cls.results:
                 if benchmark.parser_name == "Calcite" and benchmark.execution_engine_name == "DataFusion" and benchmark.query_name == "q17":
                     benchmark.error_msg = "PanicException: Q17 not supported"
                 if benchmark.error_msg is None:
@@ -325,3 +312,11 @@ class Benchmark:
             print(f"Permissions updated for {script_path} to be executable.")
         else:
             print(f"{script_path} already has execute permission.")
+
+    @classmethod
+    def write_substrait_to_file(cls, benchmark_obj: BenchmarkResult) -> None:
+        os.makedirs(cls.query_path, exist_ok=True)
+        file = cls.query_path / f"{benchmark_obj.parser_name}_{benchmark_obj.execution_engine_name}_{benchmark_obj.query_name}.json"
+        if benchmark_obj.substrait_query is not None:
+            with open(file, "w") as f:
+                f.write(benchmark_obj.substrait_query)

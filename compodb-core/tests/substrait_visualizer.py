@@ -60,6 +60,13 @@ class SubstraitVisualizer:
             input_node = node["filter"].get("input")
         elif "read" in node:
             table_name = node["read"].get("namedTable", {}).get("names", ["Unknown"])[0]
+            if table_name == "Unknown":
+                table_name = node["read"].get("localFiles", {}).get("items", {})[0].get("uriFile", ["Unknown"])
+                print("VIZ!!")
+                print(table_name)
+                if table_name != "Unknown":
+                    table_name = table_name.split("/")[-1].split(".")[0]
+                print(table_name)
             operator = f"Read ({table_name})"
             input_node = None
         else:

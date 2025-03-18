@@ -38,10 +38,10 @@ export default {
       this.updateChart([]);
     },
     updateChart(results) {
-      console.log("RESULTS:");
-      console.log(results);
       this.results = results;
       this.clearChart();
+      let disp_labels = [];
+      let x_title = "";
 
       const combinations = results.reduce((acc, item) => {
         const combination = `${item.parser_name} + ${item.execution_engine_name}`;
@@ -54,8 +54,10 @@ export default {
 
       const labels = [...new Set(results.map(item => item.query_name))];
 
+      const colorPalette = ["#E69F00", "#56B4E9", "#009E73", "#D55E00", "#0072B2", "#CC79A7", "#F0E442"];
+
       const series = [];
-      Object.keys(combinations).forEach(combination => {
+      Object.keys(combinations).forEach((combination, index) => {
         const combinationData = combinations[combination];
         series.push({
           name: combination,
@@ -64,9 +66,23 @@ export default {
             const matchingItem = combinationData.find(d => d.query_name === label && `${d.parser_name} + ${d.execution_engine_name}` === combination);
             return matchingItem ? matchingItem.runtime : 0;
           }),
-          color: `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.9)`,
+          color: colorPalette[index % colorPalette.length],
         });
       });
+
+      if (labels.length > 0) {
+        disp_labels = [...labels];
+        if (disp_labels[0].includes("query")) {
+          x_title = "TPC-DS Query";
+          disp_labels = disp_labels.map(query =>
+            query.includes("query") ? query.replace("query", "q") : query
+          );
+        } else if (disp_labels[0].includes("q")) {
+          x_title = "TPC-H Query";
+        } else {
+          x_title = "Join-Order-Benchmark Query"
+        }
+      }
 
       const options = {
         tooltip: {
@@ -76,7 +92,7 @@ export default {
           },
           backgroundColor: 'rgba(50, 50, 50, 0.8)',
         },
-        legend: {// Move the legend slightly up
+        legend: {
           textStyle: {
             color: 'black',
           },
@@ -89,10 +105,10 @@ export default {
         },
         xAxis: {
           type: 'category',
-          data: labels.length ? labels : [''],
-          name: 'TPC-H Query',
-          nameLocation: 'middle', // Center the name under the x-axis
-          nameGap: 30, // Adjust spacing from axis
+          data: disp_labels.length ? disp_labels : [''],
+          name: x_title,
+          nameLocation: 'middle',
+          nameGap: 30,
           axisLabel: {
             color: 'black',
           },
@@ -101,19 +117,22 @@ export default {
               color: 'black',
             },
           },
+          axisTick: {
+            alignWithLabel: true,
+          },
           splitLine: {
-            show: true, // Show grid lines
+            show: true,
             lineStyle: {
-              color: 'rgba(200, 200, 200, 0.5)', // Light gray grid
+              color: 'rgba(200, 200, 200, 0.5)',
             },
           },
-          show: true, // Ensure axis is visible even if no data
+          show: true,
         },
         yAxis: {
           type: 'value',
           name: 'Runtime (ms)',
-          nameLocation: 'middle', // Move name to the side, centered on the y-axis
-          nameGap: 50, // Adjust spacing from axis
+          nameLocation: 'middle',
+          nameGap: 50,
           axisLabel: {
             color: 'black',
           },
@@ -123,12 +142,12 @@ export default {
             },
           },
           splitLine: {
-            show: true, // Show grid lines
+            show: true,
             lineStyle: {
-              color: 'rgba(200, 200, 200, 0.5)', // Light gray grid
+              color: 'rgba(200, 200, 200, 0.5)',
             },
           },
-          show: true, // Ensure axis is visible even if no data
+          show: true,
         },
         series,
       };
@@ -153,15 +172,15 @@ export default {
 
       const requestData = selectedPlans.map(q => ({
         query_name: q.query_name,
-        parser_name: q.parser_name,  // Ensure the field matches FastAPI model
-        query_plan: JSON.stringify(q.substrait_query),  // Parse string if it's JSON-encoded
+        parser_name: q.parser_name,
+        query_plan: JSON.stringify(q.substrait_query),
       }));
 
       try {
         const response = await axios.post("http://localhost:8000/visualize-substrait", requestData)
           .then(response => {
             if (response && response.data && Array.isArray(response.data.images)) {
-              console.log("Success:", response.data);  // Log the entire response for clarity
+              console.log("Success:", response.data);
               if (response.data.images.length > 0) {
                 this.imageResults = response.data.images.map(image => ({
                   query_name: image.query_name,
@@ -179,7 +198,7 @@ export default {
             }
           })
           .catch(error => {
-            console.error("Error fetching DAG:", error);  // Log the error for further inspection
+            console.error("Error fetching DAG:", error);
             if (error.response) {
               console.error("API Response error:", error.response.data);
             } else if (error.request) {

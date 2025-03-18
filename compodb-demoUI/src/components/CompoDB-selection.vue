@@ -51,6 +51,21 @@ export default {
         'j-o-b_29a', 'j-o-b_29b', 'j-o-b_29c', 'j-o-b_30a', 'j-o-b_30b', 'j-o-b_30c', 'j-o-b_31a', 'j-o-b_31b',
         'j-o-b_31c', 'j-o-b_32a', 'j-o-b_32b', 'j-o-b_33a', 'j-o-b_33b', 'j-o-b_33c'
       ],
+      tpch_duckdb_demo: [
+          'tpch-q1', 'tpch-q3', 'tpch-q5', 'tpch-q6', 'tpch-q7', 'tpch-q10', 'tpch-q11', 'tpch-q12', 'tpch-q19'
+      ],
+      tpch_datafusion_demo: [
+          'tpch-q1', 'tpch-q3', 'tpch-q5', 'tpch-q6', 'tpch-q10', 'tpch-q12', 'tpch-q13', 'tpch-q14', 'tpch-q18', 'tpch-q19'
+      ],
+      tpcds_duckdb_demo: [
+        'tpcds-query3', 'tpcds-query7', 'tpcds-query22', 'tpcds-query25', 'tpcds-query26', 'tpcds-query29', 'tpcds-query42', 'tpcds-query43',
+        'tpcds-query52', 'tpcds-query55', 'tpcds-query59', 'tpcds-query65', 'tpcds-query93', 'tpcds-query97'
+      ],
+      job_duckdb_demo: [
+        'j-o-b_2a', 'j-o-b_2b', 'j-o-b_2c', 'j-o-b_2d', 'j-o-b_6f', 'j-o-b_8c', 'j-o-b_8d', 'j-o-b_11d', 'j-o-b_12a', 'j-o-b_12c',
+        'j-o-b_13a', 'j-o-b_13d', 'j-o-b_14a', 'j-o-b_14c', 'j-o-b_16a', 'j-o-b_16b', 'j-o-b_16c', 'j-o-b_16d', 'j-o-b_25a', 'j-o-b_25c',
+        'j-o-b_32a', 'j-o-b_32b', 'j-o-b_33a', 'j-o-b_33c'
+      ],
       selectAll: false,
     };
   },
@@ -59,9 +74,18 @@ export default {
       this.$emit("update-queries", newQueries);
     },
     selectedQuerySet(newValue) {
+      const autoSelectSets = [
+        "tpch_duckdb_demo",
+        "tpch_datafusion_demo",
+        "tpcds_duckdb_demo",
+        "job_duckdb_demo"
+      ];
       this.queries = [];
       this.selectAll = false;
       this.$emit("update-queries", this.queries);
+      if (autoSelectSets.includes(newValue)) {
+        this.toggleAll();
+      }
     }
   },
   computed: {
@@ -71,7 +95,9 @@ export default {
         { value: "DataFusion", label: "DataFusion" },
         { value: "DuckDB", label: "DuckDB" }
       ];
-      if (this.selectedQuerySet === "tpch") {
+      if (this.selectedQuerySet === "tpch"
+          || this.selectedQuerySet === "tpch_duckdb_demo"
+          || this.selectedQuerySet === "tpch_datafusion_demo") {
         parsers.push({ value: "Ibis", label: "Ibis" });
       }
       return parsers;
@@ -85,6 +111,14 @@ export default {
         return this.query_set_tpcds;
       } else if (this.selectedQuerySet === 'job') {
         return this.query_set_job;
+      } else if (this.selectedQuerySet === 'tpch_duckdb_demo') {
+        return this.tpch_duckdb_demo;
+      } else if (this.selectedQuerySet === 'tpch_datafusion_demo') {
+        return this.tpch_datafusion_demo;
+      } else if (this.selectedQuerySet === 'tpcds_duckdb_demo') {
+        return this.tpcds_duckdb_demo;
+      } else if (this.selectedQuerySet === 'job_duckdb_demo') {
+        return this.job_duckdb_demo;
       } else {
         return [];
       }
@@ -154,7 +188,7 @@ export default {
       this.$emit("update-queries", this.queries);
     },
     switchQuerySet() {
-      this.queries = [];  // Reset selected queries when switching sets
+      this.queries = [];
       this.selectAll = false;
       this.$emit("update-queries", this.queries);
     },
@@ -218,6 +252,10 @@ export default {
           <option value="reduced_tpch">Reduced TPC-H</option>
           <option value="tpcds">TPC-DS</option>
           <option value="job">Join-Order-Benchmark</option>
+          <option value="tpch_duckdb_demo">TPC-H DuckDB Demo</option>
+          <option value="tpch_datafusion_demo">TPC-H DataFusion Demo</option>
+          <option value="tpcds_duckdb_demo">TPC-DS DuckDB Demo</option>
+          <option value="job_duckdb_demo">Join-Order DuckDB Demo</option>
         </select>
         <button @click="toggleAll" class="select-all-btn">{{ selectAll ? 'Deselect All' : 'Select All' }}</button>
     </div>
