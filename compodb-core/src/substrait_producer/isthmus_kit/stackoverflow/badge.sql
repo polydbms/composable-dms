@@ -1,0 +1,6 @@
+CREATE TABLE badge (
+    Id BIGINT PRIMARY KEY,
+    UserId BIGINT NOT NULL,
+    Name VARCHAR(255),
+    Date TIMESTAMP
+);

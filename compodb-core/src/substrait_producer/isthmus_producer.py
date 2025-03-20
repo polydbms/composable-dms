@@ -65,7 +65,7 @@ class IsthmusProducer(Parser, Optimizer):
     def register_table(self, table: str) -> None:
         schema = DBContext.current_data_path.name
 
-        if schema in {'tpch', 'tpcds', 'imdb'}:
+        if schema in {'tpch', 'tpcds', 'imdb', 'stackoverflow'}:
             schema_loc = schema
         else:
             schema_loc = None

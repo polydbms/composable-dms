@@ -51,6 +51,10 @@ export default {
         'j-o-b_29a', 'j-o-b_29b', 'j-o-b_29c', 'j-o-b_30a', 'j-o-b_30b', 'j-o-b_30c', 'j-o-b_31a', 'j-o-b_31b',
         'j-o-b_31c', 'j-o-b_32a', 'j-o-b_32b', 'j-o-b_33a', 'j-o-b_33b', 'j-o-b_33c'
       ],
+      query_set_stackoverflow: [
+        'so3040', 'so3080', 'so5040', 'so5080', 'so6040', 'so6080',
+        'so8040', 'so8080', 'so12040', 'so12080'
+      ],
       tpch_duckdb_demo: [
           'tpch-q1', 'tpch-q3', 'tpch-q5', 'tpch-q6', 'tpch-q7', 'tpch-q10', 'tpch-q11', 'tpch-q12', 'tpch-q19'
       ],
@@ -63,7 +67,7 @@ export default {
       ],
       job_duckdb_demo: [
         'j-o-b_2a', 'j-o-b_2b', 'j-o-b_2c', 'j-o-b_2d', 'j-o-b_6f', 'j-o-b_8c', 'j-o-b_8d', 'j-o-b_11d', 'j-o-b_12a', 'j-o-b_12c',
-        'j-o-b_13a', 'j-o-b_13d', 'j-o-b_14a', 'j-o-b_14c', 'j-o-b_16a', 'j-o-b_16b', 'j-o-b_16c', 'j-o-b_16d', 'j-o-b_25a', 'j-o-b_25c',
+        'j-o-b_13a', 'j-o-b_13d', 'j-o-b_14a', 'j-o-b_14c', 'j-o-b_16a', 'j-o-b_16b', 'j-o-b_16c', 'j-o-b_16d',
         'j-o-b_32a', 'j-o-b_32b', 'j-o-b_33a', 'j-o-b_33c'
       ],
       selectAll: false,
@@ -78,7 +82,8 @@ export default {
         "tpch_duckdb_demo",
         "tpch_datafusion_demo",
         "tpcds_duckdb_demo",
-        "job_duckdb_demo"
+        "job_duckdb_demo",
+        "so"
       ];
       this.queries = [];
       this.selectAll = false;
@@ -111,6 +116,8 @@ export default {
         return this.query_set_tpcds;
       } else if (this.selectedQuerySet === 'job') {
         return this.query_set_job;
+      } else if (this.selectedQuerySet === 'so') {
+        return this.query_set_stackoverflow;
       } else if (this.selectedQuerySet === 'tpch_duckdb_demo') {
         return this.tpch_duckdb_demo;
       } else if (this.selectedQuerySet === 'tpch_datafusion_demo') {
@@ -256,6 +263,7 @@ export default {
           <option value="tpch_datafusion_demo">TPC-H DataFusion Demo</option>
           <option value="tpcds_duckdb_demo">TPC-DS DuckDB Demo</option>
           <option value="job_duckdb_demo">Join-Order DuckDB Demo</option>
+          <option value="so">StackOverflow Demo</option>
         </select>
         <button @click="toggleAll" class="select-all-btn">{{ selectAll ? 'Deselect All' : 'Select All' }}</button>
     </div>
@@ -263,7 +271,8 @@ export default {
     <div class="query-options">
       <div v-for="query in currentQuerySet" :key="query">
         <input type="checkbox" :id="query" :value="query" v-model="queries" />
-        <label :for="query">{{ query.replace('tpch-q', 'TPC-H Q').replace('reduced_tpch_q', 'Reduced TPC-H Q').replace('j-o-b_', 'JOB ').replace('tpcds-query', 'TPC-DS Q') }}</label>
+        <label :for="query">{{ query.replace('tpch-q', 'TPC-H Q').replace('reduced_tpch_q', 'Reduced TPC-H Q')
+            .replace('j-o-b_', 'JOB ').replace('tpcds-query', 'TPC-DS Q').replace('so', 'StackOverflow ') }}</label>
       </div>
     </div>
 

@@ -15,6 +15,7 @@ from src.substrait_producer.duckdb_producer import DuckDBProducer
 from src.substrait_producer.isthmus_kit.tpch_schema import *
 from src.substrait_producer.isthmus_kit.tpcds_schema import *
 from src.substrait_producer.isthmus_kit.imdb_schema import *
+from src.substrait_producer.isthmus_kit.stackoverflow_schema import *
 from src.db_context import DBContext
 from google.protobuf.json_format import Parse
 from substrait.gen.proto.plan_pb2 import Plan
@@ -90,6 +91,18 @@ class DataFusionEngine(ExecutionEngine):
             'role_type': role_type_schema,
             'title': title_schema,
         }
+        self.stackoverflow_schema_mapping = {
+            'account': account_schema,
+            'answer': answer_schema,
+            'badge': badge_schema,
+            'comment': comment_schema,
+            'post_link': post_link_schema,
+            'question': question_schema,
+            'site': site_schema,
+            'so_user': so_user_schema,
+            'tag': tag_schema,
+            'tag_question': tag_question_schema,
+        }
 
     def register_table(self, table: str):
         self.table_mapping[table.split('.')[0].upper()] = table.split('.')[0]
@@ -107,6 +120,8 @@ class DataFusionEngine(ExecutionEngine):
                     schema = self.tpcds_schema_mapping.get(table.split('.')[0])
                 elif DBContext.benchmark == 'j-o-b':
                     schema = self.imdb_schema_mapping.get(table.split('.')[0])
+                elif DBContext.benchmark == 'stackoverflow':
+                    schema = self.stackoverflow_schema_mapping.get(table.split('.')[0])
                 else:
                     pass
                 if table.endswith(".parquet"):
@@ -129,6 +144,8 @@ class DataFusionEngine(ExecutionEngine):
                         schema = self.tpcds_schema_mapping.get(table.split('.')[0])
                     elif DBContext.benchmark == 'j-o-b':
                         schema = self.imdb_schema_mapping.get(table.split('.')[0])
+                    elif DBContext.benchmark == 'stackoverflow':
+                        schema = self.stackoverflow_schema_mapping.get(table.split('.')[0])
                     else:
                         pass
                     if table.endswith(".parquet"):

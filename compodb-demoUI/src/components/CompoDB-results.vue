@@ -79,6 +79,8 @@ export default {
           );
         } else if (disp_labels[0].includes("q")) {
           x_title = "TPC-H Query";
+        } else if (disp_labels[0].includes("so")) {
+          x_title = "StackOverflow Query";
         } else {
           x_title = "Join-Order-Benchmark Query"
         }

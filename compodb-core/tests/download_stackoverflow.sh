@@ -6,10 +6,10 @@ set -x  # Enable debugging output
 TARGET_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/tests/data/stackoverflow"
 
 # Remove existing directory if it exists
-#rm -rf "$TARGET_DIR"
+rm -rf "$TARGET_DIR"
 
 # Create the directory
-#mkdir -p "$TARGET_DIR"
+mkdir -p "$TARGET_DIR"
 
 # Change into the target directory
 cd "$TARGET_DIR" || exit 1

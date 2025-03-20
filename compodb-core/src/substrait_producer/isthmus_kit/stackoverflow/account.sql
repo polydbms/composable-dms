@@ -1,0 +1,6 @@
+CREATE TABLE account (
+    Id BIGINT PRIMARY KEY,
+    UserId BIGINT NOT NULL,
+    Balance DOUBLE PRECISION,
+    LastUpdated TIMESTAMP
+);

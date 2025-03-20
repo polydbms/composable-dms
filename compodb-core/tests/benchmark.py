@@ -185,6 +185,8 @@ class Benchmark:
             cls.benchmark = 'tpcds'
         elif queries[0].startswith('j-o-b'):
             cls.benchmark = 'imdb'
+        elif queries[0].startswith('so'):
+            cls.benchmark = 'stackoverflow'
         else:
             return []
 
@@ -277,6 +279,7 @@ class Benchmark:
         reduced_query_folder = current_file_path.parent / 'queries' / 'tpch_sql_reduced'
         job_query_folder = current_file_path.parent / 'queries' / 'join-order-benchmark'
         tpcds_query_folder = current_file_path.parent / 'queries' / 'tpcds'
+        so_query_folder = current_file_path.parent / 'queries' / 'stackoverflow'
         cls.sql_queries = {}
         cls.json_queries = {}
         individual_count = 1
@@ -291,6 +294,8 @@ class Benchmark:
                 cls.sql_queries[query.split("_")[1]] = cls.get_query(f"{job_query_folder}/{query.split('_')[1]}.sql")
             elif query.startswith("tpcds"):
                 cls.sql_queries[query.split("-")[1]] = cls.get_query(f"{tpcds_query_folder}/{query.split('-')[1]}.sql")
+            elif query.startswith("so"):
+                cls.sql_queries[query] = cls.get_query(f"{so_query_folder}/{query}.sql")
             else:
                 cls.sql_queries[f"IQuery-{individual_count}"] = query
                 individual_count += 1
