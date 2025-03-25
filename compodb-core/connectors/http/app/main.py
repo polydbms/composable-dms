@@ -10,6 +10,9 @@ import logging
 app = FastAPI()
 
 app.include_router(router)
+
+if not os.path.exists("static"):
+    os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 origins = [
