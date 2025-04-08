@@ -8,3 +8,4 @@ compodb-core/tests/data/
 compodb-core/tests/queries/substrait
 compodb-core/data/
 __pycache__/
+site
